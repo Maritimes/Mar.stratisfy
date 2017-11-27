@@ -5,10 +5,9 @@
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
 #' @export
-extractData<-function(requested = NULL){
-  
-  getCatch<-function(){
-    if (.GlobalEnv$str_agency =="DFO"){
+extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NULL, strata = NULL){
+  getCatch<-function(agency, spp, missions, strata){
+    if (agency =="DFO"){
         sql <-
           paste("select C.mission,C.setno,C.size_class,C.totwgt,C.sampwgt,C.totno,C.calwt
                 from
@@ -17,21 +16,21 @@ extractData<-function(requested = NULL){
                 where
                 C.MISSION = I.Mission AND
                 C.SETNO = I.SETNO AND
-                C.SPEC =", .GlobalEnv$str_dfSpp[,1]," AND
-                C.mission IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),") AND 
-                I.STRAT IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
+                C.SPEC =", spp," AND
+                C.mission IN (",Mar.utils::SQL_in(missions),") AND 
+                I.STRAT IN (",Mar.utils::SQL_in(strata),")
                 ORDER BY C.mission,C.setno
                 ", sep="")
-    }else if (.GlobalEnv$str_agency=="NMFS"){
+    }else if (agency=="NMFS"){
         #adding fake values for calwt(0), size_class(1), and sampwgt(0) so data format matches CDN data
         sql <-
           paste("select cruise6 mission,to_number(station) setno, 1 size_class, sum(expcatchwt) totwgt, 0 sampwgt, sum(expcatchnum) totno, 0 calwt
                 from
                 usnefsc.uss_catch
                 WHERE
-                to_number(svspp)=", .GlobalEnv$str_dfSpp[,1],"
-                and cruise6 IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),")
-                AND STRATUM   IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
+                to_number(svspp)=", spp,"
+                and cruise6 IN (",Mar.utils::SQL_in(missions),")
+                AND STRATUM   IN (",Mar.utils::SQL_in(strata),")
                 group by
                 cruise6, to_number(station)
                 ORDER BY cruise6, to_number(station)", sep="")
@@ -40,8 +39,8 @@ extractData<-function(requested = NULL){
     if (nrow(raw.gscat)<1) stop("Error: No catch data can be found for your selection")
     return(raw.gscat)
   }
-   getInf<-function(){
-     if (.GlobalEnv$str_agency=='DFO'){
+   getInf<-function(agency){
+     if (agency=='DFO'){
        sql<-
          #no area filter??
          paste("select i.mission, i.setno,sdate,time,strat,
@@ -53,7 +52,7 @@ extractData<-function(requested = NULL){
           AND strat IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
           AND type IN (", .GlobalEnv$str_type,")
           ORDER BY i.mission, i.setno", sep="")
-     }else if (.GlobalEnv$str_agency=="NMFS"){
+     }else if (agency=="NMFS"){
        #distance was assumed to be 1.75, but appears to be dopdistb
        sql<-
          paste("SELECT CRUISE6 mission,to_number(station) setno, begin_est_towdate sdate, est_time time, STRATUM strat, 
@@ -68,8 +67,8 @@ extractData<-function(requested = NULL){
      #if (agency.gui=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
       return(raw.gsinf)
       }
-   getDet<-function(){
-     if (.GlobalEnv$str_agency=='DFO'){
+   getDet<-function(agency){
+     if (agency=='DFO'){
        #       AND i.STRAT IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
        sql<-paste("select d.mission,d.setno,d.size_class,d.fsex,d.age,d.fwt,         
        decode(",.GlobalEnv$str_dfSpp$LGRP,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen,          
@@ -84,7 +83,7 @@ extractData<-function(requested = NULL){
        d.SPEC=",.GlobalEnv$str_dfSpp[,1]," 
        ORDER BY d.mission,d.setno", sep="")
      raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
-     }else if (.GlobalEnv$str_agency=="NMFS"){
+     }else if (agency=="NMFS"){
        #missing fsex, sizeclass,clen
        sql1<- paste("select cruise6 mission, to_number(station) setno, age, length, avg(indwt) fwt,
         decode(", .GlobalEnv$str_dfSpp[,3],",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen
@@ -112,8 +111,8 @@ extractData<-function(requested = NULL){
    }
 
   switch(requested, 
-         "catch" = getCatch(), 
-         "inf" = getInf(),
-         "det" = getDet()
+         "catch" = getCatch(agency,spp,missions, strata), 
+         "inf" = getInf(agency),
+         "det" = getDet(agency)
   )
 }

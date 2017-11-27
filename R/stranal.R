@@ -14,32 +14,45 @@
 #' @export
 
 stranal<-function(usepkg = 'roracle', 
-                  str_agency = 'DFO',
-                  str_type = 1,
-                  str_wingspread = 41,
-                  str_towDist = 1.75
+                  agency = 'DFO',
+                  type = 1,
+                  year = 2017,
+                  season = "SUMMER",
+                  strataTable = "GROUNDFISH.GSSTRATUM",
+                  wingspread = 41,
+                  towDist = 1.75,
+                  strata = c(440:495),
+                  spp = 2526,
+                  bySex = TRUE
                   ){
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
-  if (is.null(str_agency)) assign("str_agency", getUserInput("agency"), envir = .GlobalEnv )
-  if (is.null(str_type)) assign("str_type", getUserInput("type"), envir = .GlobalEnv )
-  missionsAndStrata = getUserInput("missionsAndStrata")
-    assign("str_dfMissions", missionsAndStrata[[1]], envir = .GlobalEnv )
-    assign("str_dfMissionsStrata", missionsAndStrata[[2]], envir = .GlobalEnv )
+  
+  agency = getUserInput("agency",agency=agency)
+  type = getUserInput("type", agency=agency, type=type)
+  missionsAndStrata = getUserInput("missionsAndStrata", agency=agency,type=type, year=year, season=season)
+    dfMissions = missionsAndStrata[[1]]
+    dfMissionsStrata = missionsAndStrata[[2]]
     rm(missionsAndStrata)
 
-  assign("str_strataTable", getUserInput("strataTable"), envir = .GlobalEnv )
-  if (is.null(str_wingspread)) assign("str_wingspread", getUserInput("wingspread"), envir = .GlobalEnv )
-  if (is.null(str_towDist)) assign("str_towDist", getUserInput("towDist"), envir = .GlobalEnv )
-  assign("str_dfStrata", getUserInput("strata"), envir = .GlobalEnv )
-  
-  spp = getUserInput("spp")
-    assign("str_sexed", spp[[1]], envir = .GlobalEnv )
-    assign("str_dfSpp", spp[[2]], envir = .GlobalEnv )
-    rm(spp)
+  strataTable = getUserInput("strataTable", strataTable=strataTable, dfMissionsStrata=dfMissionsStrata)
 
-  assign("str_dfRawCatch", extractData('catch'), envir = .GlobalEnv )
-  assign("str_dfRawInf", extractData('inf'), envir = .GlobalEnv )
-  assign("str_dfRawDet", extractData('det'), envir = .GlobalEnv )
+  wingspread = getUserInput("wingspread", agency=agency, wingspread=wingspread)
+  towDist = getUserInput("towDist", towDist=towDist)
+  
+  strata = getUserInput("strata",agency=agency, strataTable=strataTable, strata = strata, 
+                        dfMissionsStrata=dfMissionsStrata, towDist=towDist, 
+                        wingspread=wingspread)
+
+  spp = getUserInput("spp", agency = agency, spp=spp, bySex = bySex)
+  sexed = spp[[1]]
+  dfSpp = spp[[2]]
+    rm(spp)
+    
+browser()
+  assign("str_dfRawCatch", extractData('catch', agency=agency, spp=str_dfSpp$SPEC, missions=dfMissions, strata = strata$STRAT), envir = .GlobalEnv )
+  assign("str_dfRawInf", extractData('inf', agency=agency), envir = .GlobalEnv )
+  assign("str_dfRawDet", extractData('det', agency=agency), envir = .GlobalEnv )
+
 
   assign("str_dfNWSets", calcNumsWeights('sets'), envir = .GlobalEnv )
   
@@ -47,7 +60,7 @@ stranal<-function(usepkg = 'roracle',
 
   assign("str_dfStrata", merge(str_dfStrata, calcNumsWeights('strataProp')), envir = .GlobalEnv )
   #perfect till here (though this R version gives strata that no sets)
-  
+  browser("Lets not get ahead of ourselves") 
   tt=calcAgeLen('doEg')
   assign('tt', tt, envir = .GlobalEnv)
 
