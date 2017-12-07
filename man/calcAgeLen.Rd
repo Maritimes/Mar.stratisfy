@@ -4,10 +4,36 @@
 \alias{calcAgeLen}
 \title{calcAgeLen}
 \usage{
-calcAgeLen(requested = NULL)
+calcAgeLen(requested = NULL, agency = NULL, dfNWSets = NULL,
+  dfRawDet = NULL, dfRawInf = NULL, dfStrata = NULL, dfSpp = NULL,
+  towDist = NULL, sexed = NULL, agelen = NULL, lengthsTotals = NULL,
+  lset = NULL)
 }
 \arguments{
-\item{requested}{The default value is \code{NULL}.}
+\item{requested}{The default value is \code{NULL}. This determines which 
+analytic will be performed.}
+
+\item{agency}{The default value is \code{NULL}.}
+
+\item{dfNWSets}{The default value is \code{NULL}.}
+
+\item{dfRawDet}{The default value is \code{NULL}.}
+
+\item{dfRawInf}{The default value is \code{NULL}.}
+
+\item{dfStrata}{The default value is \code{NULL}.}
+
+\item{dfSpp}{The default value is \code{NULL}.}
+
+\item{towDist}{The default value is \code{NULL}.}
+
+\item{sexed}{The default value is \code{NULL}.}
+
+\item{agelen}{The default value is \code{NULL}.}
+
+\item{lengthsTotals}{The default value is \code{NULL}.}
+
+\item{lset}{The default value is \code{NULL}.}
 }
 \description{
 This function calculates the ages and lengths.

@@ -4,14 +4,76 @@
 \alias{stranal}
 \title{stranal}
 \usage{
-stranal(usepkg = "roracle")
+stranal(usepkg = "roracle", agency = "DFO", type = 1, year = 2017,
+  season = "SUMMER", strataTable = "GROUNDFISH.GSSTRATUM",
+  wingspread = 41, towDist = 1.75, strata = c(440:495), spp = 2526,
+  bySex = F, output = "new")
 }
 \arguments{
 \item{usepkg}{The default value is \code{'roracle'}, but \code{'rodbc'} is works as well.
 This describes the R package you use to connect to Oracle.}
+
+\item{agency}{The default value is \code{DFO}, the other option is 
+\code{'NMFS'}.  Setting to \code{NULL} will result in a pick list.}
+
+\item{type}{The default value is \code{1}.  For agency=DFO, 5 is also 
+acceptable. For agency = NMFS, 136 is probable, but you can type any integer.
+The typed number will be embedded in \code{USNEFSC.USS_STATION.SHG <= type}.
+Setting to \code{NULL} will result in a pick list.}
+
+\item{year}{The default value is \code{2017}. Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{season}{The default value is \code{"SUMMER"}. Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{strataTable}{The default value is \code{"GROUNDFISH.GSSTRATUM"}. 
+Setting to \code{NULL} will result in a pick list.}
+
+\item{wingspread}{The default value is \code{41}. Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{towDist}{The default value is \code{1.75}. Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{strata}{The default value is \code{c(440:495)}. Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{spp}{The default value is \code{2526}. Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{bySex}{The default value is \code{TRUE}. Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{output}{The default value is \code{new}.  This determines the format of 
+the output Excel file. Setting to \code{classic} will try to emulate the
+original APL STRANAL results}
 }
 \description{
-Stuff.
+STRANAL is a program capable of Stratified Analysis of both DFO 
+and NMFS survey data. STRANAL exports all results to Excel. 
+
+STRANAL works by opening a connection to the PTRAN database. It receives the 
+requested information through standard SQL queries that are generated from 
+user selections through the User Interface. That information is then 
+processed and a Stratified Analysis is created, which is exported to Excel. 
+
+STRANAL requires an Oracle account on the PTRAN database. New Oracle accounts 
+are requested by filling out a computer account request form. These forms may 
+be obtained from IM&TS. Select access to the DFO and NMFS data is provided by 
+the respective datasets manager.
+}
+\note{
+Reports of errors and/or recommendations for improvements should be 
+addressed to:
+Mike McMahon (Mike.McMahon@dfo-mpo.gc.ca)
+Fisheries and Oceans Canada
+
+Fun Fact!  Stranal does funny things with berried females - when 
+analyses are done by sex, berried females (i.e. 3), are ignored; and when 
+analysis is not done by sex, berried females are included. Such inconsistency 
+seems suboptimal, and is retained for now such that APL and R versions of the 
+application can be compared.
 }
 \seealso{
 Other Gale-force: \code{\link{calcAgeLen}},

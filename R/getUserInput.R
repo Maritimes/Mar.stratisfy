@@ -4,9 +4,30 @@
 #' shown is determined by the value of the paramter \code{"requested"}.
 #' Some of the options that are presented are dependent on the existence of 
 #' values written to the global environment by the stranal function.
-#' @param requested  The default value is \code{NULL}.  
-#' @param params  The default value is \code{NULL}.  These are additional 
-#' parameters that are specific to the particular \code{requested} value.  
+#' @param requested   The default value is \code{NULL}. This determines which 
+#' picklist will be invoked.
+#' @param agency   The default value is \code{NULL}.  Valid values are 'DFO' and
+#'  'NMFS'.
+#' @param type   The default value is \code{NULL}.  Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param strataTable   The default value is \code{NULL}.  Setting to 
+#' \code{NULL} will result in a pick list.
+#' @param year   The default value is \code{NULL}.  Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param season   The default value is \code{NULL}.  Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param wingspread   The default value is \code{NULL}.  Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param towDist  The default value is \code{NULL}.  Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param spp   The default value is \code{NULL}.  Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param bySex   The default value is \code{NULL}.  Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param strata   The default value is \code{NULL}.  Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param dfMissionsStrata   The default value is \code{NULL}.  Setting to 
+#' \code{NULL} will result in a pick list.
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
@@ -27,15 +48,16 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
     availWingspread<-switch(agency,
                             "DFO" = c("41","34"),
                             "NMFS"=c("34","36","41"))
-    availWingspread<-switch(agency,
+    availWingspreadPre<-switch(agency,
                             "DFO" = c("41"),
                             "NMFS"=c("34"))
     if (wingspread %in% availWingspread){
       return(as.numeric(wingspread)) 
     }else{
+      choice<-NA
       while(is.na(choice)){
         choice =  as.numeric(select.list(availWingspread,
-                                         preselect=availWingspread,
+                                         preselect=availWingspreadPre,
                                          multiple=F, graphics=T, 
                                          title='Select the Wingspread (ft)'))
         if (is.na(choice)) print("You must select a wingspread")
@@ -70,7 +92,26 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
   
   getType<-function(agency, type){
     if (agency == "NMFS"){
-      return(136)
+      typePick<-NA
+      if (is.numeric(type))typePick<-type
+      while(is.na(typePick)){
+        typePick = select.list(c("136","other"),
+                                  preselect=c("136"),
+                                  multiple=F, graphics=T, 
+                                  title='Set Type')
+        if (is.na(typePick)) print("You must select one of provided options")
+      }
+      if (typePick == "other") {
+        typePick = as.numeric(readline(prompt =
+"Any experiment type greater than or equal to the value will be included in 
+the analysis. The default is <= 136. This may be changed as required. Used in 
+the queries as: *.SHG <= 136
+
+Please enter the survey type:"))
+        print(typePick)
+      }
+      typePick=as.numeric(typePick)
+      return(typePick)
     }else if (agency == "DFO"){
       if (type %in% c(1,5)){
         return(as.numeric(type)) 
@@ -232,7 +273,7 @@ Please choose a different year, or check your parameters\n***\n")
     #1) STRATA
     if (agency == "DFO"){
       sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
-    } else if (.GlobalEnv$str_agency == "NMFS"){
+    } else if (agency == "NMFS"){
       sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRATUM")
     }
     availStrata = oracle_cxn$thecmd(oracle_cxn$channel,  sql1)
@@ -365,7 +406,6 @@ sex option.  Please select one from the list.\n")
 
     strataPick<-NA
     if (!is.null(strata)) strataPick <-strata
-    #here!
     if (all(nchar(dfMissionsStrata[,1])==5)){
       strata.tweak = "AND LENGTH(STRAT)=5"
       strata.preselect=""
@@ -393,7 +433,7 @@ sex option.  Please select one from the list.\n")
           strat IN (",Mar.utils::SQL_in(dfStrata[,1]),")
            ORDER BY strat", sep="")
     dfStrata.det<-oracle_cxn$thecmd(oracle_cxn$channel, sql2)
-    if (agency=="NMFS") dfStrata.det$STRAT<-sprintf("%05d", dfStrata.det$STRAT)
+    if (agency=="NMFS") dfStrata.det$STRAT<-sprintf("%05s", dfStrata.det$STRAT)
     dfStrata.det= merge(dfStrata, dfStrata.det)
     dfStrata.det<-dfStrata.det[order(dfStrata.det$STRAT),] 
     return(dfStrata.det)

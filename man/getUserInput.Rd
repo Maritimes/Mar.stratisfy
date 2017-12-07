@@ -4,10 +4,47 @@
 \alias{getUserInput}
 \title{getUserInput}
 \usage{
-getUserInput(requested = NULL)
+getUserInput(requested = NULL, agency = NULL, type = NULL,
+  strataTable = NULL, year = NULL, season = NULL, wingspread = NULL,
+  towDist = NULL, spp = NULL, bySex = NULL, strata = NULL,
+  dfMissionsStrata = NULL)
 }
 \arguments{
-\item{requested}{The default value is \code{NULL}.}
+\item{requested}{The default value is \code{NULL}. This determines which 
+picklist will be invoked.}
+
+\item{agency}{The default value is \code{NULL}.  Valid values are 'DFO' and
+'NMFS'.}
+
+\item{type}{The default value is \code{NULL}.  Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{strataTable}{The default value is \code{NULL}.  Setting to 
+\code{NULL} will result in a pick list.}
+
+\item{year}{The default value is \code{NULL}.  Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{season}{The default value is \code{NULL}.  Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{wingspread}{The default value is \code{NULL}.  Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{towDist}{The default value is \code{NULL}.  Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{spp}{The default value is \code{NULL}.  Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{bySex}{The default value is \code{NULL}.  Setting to \code{NULL} will 
+result in a pick list.}
+
+\item{strata}{The default value is \code{NULL}.  Setting to \code{NULL} 
+will result in a pick list.}
+
+\item{dfMissionsStrata}{The default value is \code{NULL}.  Setting to 
+\code{NULL} will result in a pick list.}
 }
 \description{
 This function can present the user with a variety of select 

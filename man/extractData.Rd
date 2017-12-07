@@ -4,10 +4,24 @@
 \alias{extractData}
 \title{extractData}
 \usage{
-extractData(requested = NULL)
+extractData(requested = NULL, agency = NULL, dfSpp = NULL, type = NULL,
+  missions = NULL, strata = NULL, bySex = NULL)
 }
 \arguments{
-\item{requested}{The default value is \code{NULL}.}
+\item{requested}{The default value is \code{NULL}. This determines which 
+analytic will be performed.}
+
+\item{agency}{The default value is \code{NULL}.}
+
+\item{dfSpp}{The default value is \code{NULL}.}
+
+\item{type}{The default value is \code{NULL}.}
+
+\item{missions}{The default value is \code{NULL}.}
+
+\item{strata}{The default value is \code{NULL}.}
+
+\item{bySex}{The default value is \code{NULL}.}
 }
 \description{
 This function doesn't do anything yet.

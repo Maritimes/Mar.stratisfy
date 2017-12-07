@@ -1,17 +1,66 @@
 #' @title stranal
-#' @description Stuff.  
+#' @description STRANAL is a program capable of Stratified Analysis of both DFO 
+#' and NMFS survey data. STRANAL exports all results to Excel. 
+#' 
+#' STRANAL works by opening a connection to the PTRAN database. It receives the 
+#' requested information through standard SQL queries that are generated from 
+#' user selections through the User Interface. That information is then 
+#' processed and a Stratified Analysis is created, which is exported to Excel. 
+#' 
+#' STRANAL requires an Oracle account on the PTRAN database. New Oracle accounts 
+#' are requested by filling out a computer account request form. These forms may 
+#' be obtained from IM&TS. Select access to the DFO and NMFS data is provided by 
+#' the respective datasets manager.
 #' @param usepkg  The default value is \code{'roracle'}, but \code{'rodbc'} is works as well.
 #' This describes the R package you use to connect to Oracle.  
+#' @param agency  The default value is \code{DFO}, the other option is 
+#' \code{'NMFS'}.  Setting to \code{NULL} will result in a pick list.
+#' @param type The default value is \code{1}.  For agency=DFO, 5 is also 
+#' acceptable. For agency = NMFS, 136 is probable, but you can type any integer.
+#' The typed number will be embedded in \code{USNEFSC.USS_STATION.SHG <= type}.
+#' Setting to \code{NULL} will result in a pick list.
+#' @param year The default value is \code{2017}. Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param season The default value is \code{"SUMMER"}. Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param strataTable The default value is \code{"GROUNDFISH.GSSTRATUM"}. 
+#' Setting to \code{NULL} will result in a pick list.
+#' @param wingspread The default value is \code{41}. Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param towDist The default value is \code{1.75}. Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param strata The default value is \code{c(440:495)}. Setting to \code{NULL} 
+#' will result in a pick list.
+#' @param spp The default value is \code{2526}. Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param bySex The default value is \code{TRUE}. Setting to \code{NULL} will 
+#' result in a pick list.
+#' @param output The default value is \code{new}.  This determines the format of 
+#' the output Excel file. Setting to \code{classic} will try to emulate the
+#' original APL STRANAL results
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}l
 #' @importFrom RODBC odbcConnect
 #' @importFrom RODBC sqlQuery
 #' @importFrom stats aggregate
 #' @importFrom Mar.utils make_oracle_cxn
-#' @importFrom Mar.utils na_zero
 #' @importFrom Mar.utils SQL_in
 #' @importFrom Mar.utils st_err
+#' @importFrom xlsx createWorkbook
+#' @importFrom xlsx createSheet
+#' @importFrom xlsx addDataFrame
+#' @importFrom xlsx saveWorkbook
 #' @export
+#' @note Reports of errors and/or recommendations for improvements should be 
+#' addressed to:
+#' Mike McMahon (Mike.McMahon@dfo-mpo.gc.ca)
+#' Fisheries and Oceans Canada
+#'
+#' @note Fun Fact!  Stranal does funny things with berried females - when 
+#' analyses are done by sex, berried females (i.e. 3), are ignored; and when 
+#' analysis is not done by sex, berried females are included. Such inconsistency 
+#' seems suboptimal, and is retained for now such that APL and R versions of the 
+#' application can be compared. 
 
 stranal<-function(usepkg = 'roracle', 
                   agency = 'DFO',
@@ -23,8 +72,10 @@ stranal<-function(usepkg = 'roracle',
                   towDist = 1.75,
                   strata = c(440:495),
                   spp = 2526,
-                  bySex = TRUE
+                  bySex = F,
+                  output = "new"
                   ){
+  
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
   
   agency = getUserInput("agency",agency=agency)
@@ -39,7 +90,7 @@ stranal<-function(usepkg = 'roracle',
   wingspread = getUserInput("wingspread", agency=agency, wingspread=wingspread)
   towDist = getUserInput("towDist", towDist=towDist)
   
-  strata = getUserInput("strata",agency=agency, strataTable=strataTable, strata = strata, 
+  dfStrata = getUserInput("strata",agency=agency, strataTable=strataTable, strata = strata, 
                         dfMissionsStrata=dfMissionsStrata, towDist=towDist, 
                         wingspread=wingspread)
 
@@ -47,289 +98,141 @@ stranal<-function(usepkg = 'roracle',
   sexed = spp[[1]]
   dfSpp = spp[[2]]
     rm(spp)
-    
-browser()
-  assign("str_dfRawCatch", extractData('catch', agency=agency, spp=str_dfSpp$SPEC, missions=dfMissions, strata = strata$STRAT), envir = .GlobalEnv )
-  assign("str_dfRawInf", extractData('inf', agency=agency), envir = .GlobalEnv )
-  assign("str_dfRawDet", extractData('det', agency=agency), envir = .GlobalEnv )
 
+  dfRawCatch <- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT)
+  dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, type=type)
+  dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, dfSpp = dfSpp, bySex = bySex, type=type)
+  dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
+  dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
 
-  assign("str_dfNWSets", calcNumsWeights('sets'), envir = .GlobalEnv )
+  dfStrata <- merge(dfStrata, calcNumsWeights('strataProp', dfNWSets=dfNWSets, 
+                                             dfStrata=dfStrata, dfNWAgg=dfNWAgg), all.x=T)
+    allStrat = as.data.frame(dfStrata[,"STRAT"])
+    colnames(allStrat)<-"STRAT"
   
-  assign("str_dfNWAgg", calcNumsWeights('setsAgg'), envir = .GlobalEnv )
-
-  assign("str_dfStrata", merge(str_dfStrata, calcNumsWeights('strataProp')), envir = .GlobalEnv )
-  #perfect till here (though this R version gives strata that no sets)
-  browser("Lets not get ahead of ourselves") 
-  tt=calcAgeLen('doEg')
-  assign('tt', tt, envir = .GlobalEnv)
-
-  # ################################################################################
-  # ###                          LENGTH ANALYTICS                                   
-  # ###    LENGTH BY SET
-  # ###    LENGTH MEAN
-  # ###    LENGTH MEAN STANDARD ERROR 
-  # ###    LENGTH TOTAL
-  # ###    LENGTH TOTAL STANDARD ERROR
-  # all.c<-c("STRAT", "MISSION", "SETNO")
-  # if (isTRUE(by.sex)){
-  #   order.c<-c("STRAT","MISSION","SETNO","FSEX")
-  #   sex.c<-c("STRAT","SLAT","SLONG","AREA", "MISSION","SETNO","FLEN","CAGE","FSEX") 
-  #   fields<-c("STRAT","SLAT","SLONG","AREA", "MISSION","SETNO","FLEN","FSEX")
-  # }else{
-  #   order.c<-c("STRAT","MISSION","SETNO")
-  #   sex.c<-c("STRAT","SLAT","SLONG","AREA", "MISSION","SETNO","FLEN","CAGE")
-  #   fields<-c("STRAT","SLAT","SLONG","AREA", "MISSION","SETNO","FLEN")
-  # }
-  # 
-  # lset<-na.zero(agelen[,sex.c])
-  # li = which(lset$CAGE==0) 
-  # lset$FLEN[li] = unique(lset$FLEN)[1]
-  # lset<-aggregate(lset$CAGE,
-  #                 lset[fields],
-  #                 FUN=sum)
-  # 
-  # lset<-lset[with(lset,order(get(order.c))),]
-  # lset<-melt(lset,id.vars=fields)
-  # #not very slick - would like to be able to dynamically send columns to dcast
-  # if (isTRUE(by.sex)){  
-  #   
-  #   lset$FSEX[is.na(lset$FSEX)]<-'UNK' #MMM Oct 28, 2015
-  #   lset$FSEX[lset$FSEX==0]<-'UNK'
-  #   lset$FSEX[lset$FSEX==1]<-'MALE'
-  #   lset$FSEX[lset$FSEX==2]<-'FEMALE'
-  #   length_by_set <- na.zero(dcast(lset, STRAT + MISSION + SETNO ~ FSEX +FLEN  ))
-  # }else{
-  #   #following gives - Aggregation function missing: defaulting to length
-  #   length_by_set <- na.zero(dcast(lset, STRAT + MISSION + SETNO ~ FLEN ))
-  # }
-  # length_by_set<-length_by_set[order(length_by_set$STRAT,length_by_set$SETNO),]
-  # length_total<-merge(subset(strata.area,select=-c(SQNM)),length_by_set)
-  # #unexpected sqnm
-  # #add row_tots to length_by_set
-  # length_by_set$TOTAL<-rowSums(length_by_set[,4:length(length_by_set)])
-  # 
-  # #separate the length and non-length-related data for the sets of the dataframe
-  # length_total_pre  <-length_total[,c("STRAT","TUNITS")]
-  # length_total_strat_data       <-length_total[,c(1,5:ncol(length_total))]
-  # #capture all of the column names of the data
-  # colNames<-names(length_total_strat_data)
-  # #count sets/strata
-  # length_total_strat_data.cnt<-aggregate(list(
-  #   COUNT=length_total_strat_data$STRAT), 
-  #   by=list(STRAT=length_total_strat_data$STRAT), 
-  #   FUN=length)
-  # 
-  # #add an additional rowname for the column totals 
-  # length_rownames<-c(length_total_strat_data.cnt[,1],'Total')
-  # length_rownames_noTotal<-c(length_total_strat_data.cnt[,1])
-  # #mean length
-  # length_mean<-setNames(aggregate(
-  #   list(length_total_strat_data[,2:ncol(length_total_strat_data)]), 
-  #   by=list(STRAT=length_total_strat_data$STRAT), 
-  #   FUN=mean), colNames)
-  # #drop strata column
-  # length_mean<-length_mean[,-1]
-  # #add rowsums
-  # length_mean<-cbind(length_mean,RowTotals=rowSums(length_mean)) 
-  # #add rowname
-  # length_mean<-cbind(STRAT=length_rownames_noTotal,length_mean)        
-  # 
-  # #mean length std error 
-  # length_mean_se<-setNames(aggregate(
-  #   list(length_total_strat_data[,c(2:ncol(length_total_strat_data))]), 
-  #   by=list(STRAT=length_total_strat_data$STRAT), 
-  #   FUN=st.err), colNames)
-  # #drop strata column
-  # length_mean_se<-length_mean_se[,-1] 
-  # #add rowname
-  # length_mean_se<-na.zero(cbind(STRAT=length_rownames_noTotal,length_mean_se))            
-  # 
-  # #multiply all length data by tunits for "total length"
-  # length_total_strat_data_tunits<-cbind(STRAT=length_total_pre$STRAT,
-  #                                       length_total[,c(5:ncol(length_total))]*
-  #                                         length_total_pre$TUNITS)
-  # 
-  # #total length
-  # length_total<-setNames(aggregate(list(
-  #   length_total_strat_data_tunits[,2:ncol(length_total_strat_data_tunits)]), 
-  #   by=list(STRAT=length_total_strat_data_tunits$STRAT), 
-  #   FUN=mean), colNames)
-  # #drop strata column
-  # length_total<-length_total[,-1] 
-  # #add rowsums
-  # length_total<-cbind(length_total,RowTotals=rowSums(length_total)) 
-  # #separated this because I use it in age calculations
-  # ColTotalsLength=colSums(length_total) 
-  # #add colsums
-  # length_total<-rbind(length_total,ColTotals=ColTotalsLength) 
-  # #add rowname
-  # length_total<-na.zero(cbind(STRAT=length_rownames,length_total))          
-  # 
-  # #total length std error 
-  # length_total_se<-setNames(aggregate(list(
-  #   length_total_strat_data_tunits[,2:ncol(length_total_strat_data_tunits)]), 
-  #   by=list(STRAT=length_total_strat_data_tunits$STRAT), 
-  #   FUN=st.err), colNames)
-  # #drop strata column
-  # length_total_se<-length_total_se[,-1] 
-  # #add rowname
-  # length_total_se<-na.zero(cbind(STRAT=length_rownames_noTotal,length_total_se))          
-  # 
-  # 
-  # ################################################################################
-  # ###                          AGE LENGTH KEY                                     
-  # 
-  # alk<-agelen[,c("AGE","FLEN","CAGE","SETNO")]
-  # alk<-alk[!is.na(alk$AGE), ]
-  # if (nrow(alk)<1){     #only try age calculations if we have ages
-  #   print("age calculations unavailable - no ages in data")
-  #   age_by_set<-"can't do age_by_set - no ages in data"
-  #   ages<-"can't do ages - no ages in data"
-  #   age.length.key.totals<-"can't do age.length.key.totals - no ages in data"
-  #   age_table<-"can't do age_table - no ages in data"
-  #   age_length_weight<-"can't do age_length_weight - no ages in data"
-  # }else{
-  #   all.ages = seq(min(alk$AGE),max(alk$AGE)) 
-  #   all.lengths = seq(min(alk$FLEN),max(alk$FLEN),by=as.numeric(species.lgrp.gui )) 
-  #   al = expand.grid(all.ages,all.lengths)
-  #   names(al) = c('AGE','FLEN')
-  #   al$SETNO = al$CAGE = 0
-  #   alk = rbind(alk,al)
-  #   alk$SETNO = ifelse(alk$SETNO>0,1,NA)
-  #   
-  #   age.length.key<-na.zero(
-  #     t(
-  #       tapply(
-  #         alk$SETNO,
-  #         list(alk$AGE, alk$FLEN),
-  #         function(x) length(x[!is.na(x)])
-  #       )
-  #     )
-  #   )
-  #   Length_Totals<-rowSums(age.length.key, dims = 1)
-  #   
-  #   age.length.key.totals<-cbind(age.length.key,Length_Totals) 
-  #   
-  #   Age_Totals<-colSums(age.length.key.totals, dims = 1)
-  #   age.length.key.totals<-rbind(age.length.key.totals,Age_Totals)
-  #   
-  #   alw<-aggregate(FWT~AGE+FLEN,data=agelen,FUN=mean)
-  #   alw<-alw[order(alw$AGE,alw$FLEN),]
-  #   alw$FWT = alw$FWT / 1000
-  #   age_length_weight = na.zero(reshape(
-  #     alw,idvar='FLEN',timevar='AGE',direction='wide'))
-  #   age_length_weight<-age_length_weight[order(age_length_weight$FLEN),]
-  #   rownames(age_length_weight)<-age_length_weight[,1]
-  #   age_length_weight$FLEN<-NULL
-  #   ################################################################################
-  #   ###                          AGE CALCULATIONS                                   
-  #   
-  #   
-  #   
-  #   ages_prop<-prop.table(as.matrix(age.length.key),1) 
-  #   ages_prop<-ifelse(is.nan(ages_prop),0,ages_prop)
-  #   ages_prop<-as.data.frame(ages_prop)
-  #   theseages<-c(names(ages_prop))
-  #   
-  #   lengths<-ColTotalsLength[1:length(ColTotalsLength)-1] 
-  #   lengths1<-as.data.frame(lengths)
-  #   lengths1$FLEN<-names(lengths)
-  #   lengths1<-merge(ages_prop,lengths1,all.x=T)
-  #   
-  #   age_table<-na.zero(ages_prop*lengths1$lengths)
-  #   
-  #   ages_prop$FLEN<-as.numeric(rownames(ages_prop))
-  #   ageset<-lset[,c("STRAT","MISSION","SETNO","FLEN","value")]
-  #   colnames(ageset)[which(names(ageset) == "value")] <- "CAGE"
-  #   ageset<-ageset[order(ageset$STRAT,ageset$MISSION, ageset$SETNO),]
-  #   
-  #   ages_pre<-merge(ageset,ages_prop, by="FLEN")
-  #   ages_pre<-as.data.table(ages_pre)
-  #   ages_pre[, (theseages) := lapply(.SD, 
-  #                                    function(x) x * ages_pre[['CAGE']] ), 
-  #            .SDcols = theseages]
-  #   age_by_set<-aggregate(.~STRAT + MISSION + SETNO, data=ages_pre, sum)
-  #   age_by_set<-age_by_set[order(age_by_set$STRAT,age_by_set$SETNO),]
-  #   age_by_set$FLEN<-NULL 
-  #   age_by_set$CAGE<-NULL
-  #   
-  #   age_mean<-age_by_set
-  #   age_mean$SETNO<-NULL
-  #   age_mean$MISSION<-NULL
-  #   age_mean<-aggregate(.~STRAT, data=age_mean, mean)
-  #   setnames(age_mean,
-  #            old=names(age_mean[,2:ncol(age_mean)]), 
-  #            new=c(paste0("age_",theseages,"_mean")))
-  #   
-  #   age_mean_se<-age_by_set
-  #   age_mean_se$SETNO<-NULL
-  #   age_mean_se$MISSION<-NULL
-  #   age_mean_se<-aggregate(.~STRAT, data=age_mean_se, st.err)
-  #   setnames(age_mean_se,
-  #            old=names(age_mean_se[,2:ncol(age_mean_se)]), 
-  #            new=c(paste0("age_",theseages,"_se")))
-  #   
-  #   age_pretotal<-as.data.table(merge(strata.area,age_by_set, by="STRAT"))
-  #   age_pretotal$SQNM<-NULL
-  #   age_pretotal[, (theseages) := lapply(.SD, 
-  #                                        function(x) x * age_pretotal[['TUNITS']] ), 
-  #                .SDcols = theseages]
-  #   age_pretotal$TUNITS<-NULL
-  #   age_total<-age_pretotal
-  #   age_total$MISSION<-NULL
-  #   age_total$SETNO<-NULL
-  #   age_total<-aggregate(.~STRAT, data=age_total, mean)
-  #   setnames(age_total,
-  #            old=names(age_total[,2:ncol(age_total)]), 
-  #            new=c(paste0("age_",theseages,"_tot")))
-  #   age_total_se<-age_pretotal
-  #   age_total_se$MISSION<-NULL
-  #   age_total_se$SETNO<-NULL
-  #   age_total_se<-aggregate(.~STRAT, data=age_total_se, st.err)
-  #   setnames(age_total_se,
-  #            old=names(age_total_se[,2:ncol(age_total_se)]), 
-  #            new=c(paste0("age_",theseages,"_tot_se")))
-  #   age_by_set.cnt<-aggregate(list(
-  #     COUNT=age_by_set$STRAT), 
-  #     by=list(STRAT=age_by_set$STRAT), 
-  #     FUN=length)
-  #   ages<-merge(age_by_set.cnt,age_mean)
-  #   ages<-merge(ages,age_mean_se)
-  #   ages<-merge(ages,age_total)
-  #   ages<-na.zero(merge(ages,age_total_se))
-  # } #end of age calculations
-  # 
-  # input_parameters<-list("stranal version"=paste0( stranal.ver ),
-  #                        "Analysis Date"=Sys.time(),
-  #                        "Experiment Type"=these.type, 
-  #                        "Strata"=these.strat, 
-  #                        "Missions"=these.missions,
-  #                        "Year"=year,
-  #                        "By.Sex"=by.sex,
-  #                        "Species"=paste0(species.code, " (",species.name,")"),
-  #                        "Wingspread"=wingspread, 
-  #                        "Distance"=towdist,
-  #                        "Data Source"=agency.gui,
-  #                        "ALK Modifications"="No")
-  # ################################################################################
-  # ###                          RESULTS                                            
-  # results<-list(
-  #   input_parameters=input_parameters,
-  #   strata.areas=strata.areas, 
-  #   set_info=set_info,
-  #   length_by_set=length_by_set, 
-  #   length_mean=length_mean, 
-  #   length_mean_se=length_mean_se, 
-  #   length_total=length_total, 
-  #   length_total_se=length_total_se,
-  #   nw=nw,   
-  #   weights=weights, #kg
-  #   numbers=numbers, 
-  #   age.length.key.totals=age.length.key.totals,
-  #   age_table=age_table, 
-  #   age_length_weight=age_length_weight,
-  #   age_by_set=age_by_set,  
-  #   ages=ages)
-  # return(results)
+  nwData <- merge(allStrat, dfNWAgg, all.x = TRUE)
+  nwData[is.na(nwData)]<-0
+  
+  
+  lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
+                dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
+                towDist=towDist, sexed=sexed)
+    agelen<-lengthsData$agelen
+    lengthsTotals<-lengthsData$length_total
+    lset = lengthsData$lset
+  ageLengthKey <-calcAgeLen('ageKey', agelen=agelen, dfSpp=dfSpp, lengthsTotals 
+                            = lengthsTotals, lset = lset)
+  metadata=list("Mar.stranal" = utils::packageDescription('Mar.stranal')$Version,
+                "Date" = Sys.time(),
+                "Data Source" = agency,
+                "Strata" = paste("'", paste(strata, collapse="','"),"'", sep=""),
+                "Species" = paste0(dfSpp$CNAME, " (", dfSpp$SPEC ,")"),
+                "By Sex" = bySex,
+                "Distance" = towDist,
+                "Spread" = wingspread,
+                "Stratum Area Table" =  strataTable,
+                "Experiment Type" = type,
+                "ALK Modifications" = 'Not implemented yet')
+  res=list(metadata = metadata,
+           strataInfo = dfStrata,
+           nwInfo = nwData,
+           lengthInfo = lengthsData,
+           ageInfo = ageLengthKey
+  )
+  if (output=="classic"){
+    wbName = "Mar.stranal.xlsx"
+    md = data.frame(unlist(metadata))
+    colnames(md)<-"Value"
+    wb<-createWorkbook(type="xlsx")
+      sheet1 <- createSheet(wb, sheetName = "QUERY")
+        addDataFrame(md, row.names = TRUE, sheet1)
+      sheet2 <- createSheet(wb, sheetName = "Strata Area")
+        addDataFrame(dfStrata[,c("STRAT","TUNITS","SQNM")], row.names = FALSE, sheet2)
+      sheet3 <- createSheet(wb, sheetName = "Prop Area")
+        addDataFrame(dfStrata[,c("STRAT","AREAPROP")], row.names = FALSE, sheet3)
+      sheet4 <- createSheet(wb, sheetName = "Prop Area Standard Error")
+        addDataFrame(dfStrata[,c("STRAT","AREAPROPSTERR")], row.names = FALSE, sheet4)
+      sheet5 <- createSheet(wb, sheetName = "Total Area")
+        addDataFrame(dfStrata[,c("STRAT","AREATOT")], row.names = FALSE, sheet5)
+      sheet6 <- createSheet(wb, sheetName = "Total Area Standard Error")
+        addDataFrame(dfStrata[,c("STRAT","AREATOTSTERR")], sheet6)
+      sheet7 <- createSheet(wb, sheetName = "Age Length Key")
+        addDataFrame(ageLengthKey$alk, row.names = TRUE, sheet7)
+      sheet8 <- createSheet(wb, sheetName = "Age Table")
+        addDataFrame(ageLengthKey$age_table, row.names = TRUE, sheet8)
+      sheet9 <- createSheet(wb, sheetName = "Age Length Weight")
+        addDataFrame(ageLengthKey$alw, row.names = TRUE, sheet9)
+      sheet10 <- createSheet(wb, sheetName = "Length By Set")
+        addDataFrame(lengthsData$length_by_set, row.names = FALSE, sheet10)
+      sheet11 <- createSheet(wb, sheetName = "Length Mean")
+        addDataFrame(lengthsData$length_by_strat_mean, row.names = FALSE, sheet11)
+      sheet12 <- createSheet(wb, sheetName = "Length Mean Standard Error")
+        addDataFrame(lengthsData$length_by_strat_se, row.names = FALSE, sheet12)
+      sheet13 <- createSheet(wb, sheetName = "Length Total")
+        addDataFrame(lengthsData$length_total, row.names = FALSE, sheet13)
+      sheet14 <- createSheet(wb, sheetName = "Length Total Standard Error")
+        addDataFrame(lengthsData$length_total_se, row.names = FALSE, sheet14)
+      sheet15 <- createSheet(wb, sheetName = "Age By Set")
+      sheet16 <- createSheet(wb, sheetName = "Age Mean")
+      sheet17 <- createSheet(wb, sheetName = "Age Mean Standard Error")
+      sheet18 <- createSheet(wb, sheetName = "Age Total")
+      sheet19 <- createSheet(wb, sheetName = "Age Total Standard Error")
+      sheet20 <- createSheet(wb, sheetName = "Weight by Set")
+        #addDataFrame(nwData[,c("STRAT", "TOT_WGT")], row.names = FALSE, sheet20)
+      sheet21 <- createSheet(wb, sheetName = "Weight Mean")
+        addDataFrame(nwData[,c("STRAT","MEAN_WGT")], row.names = FALSE, sheet21)
+      sheet22 <- createSheet(wb, sheetName = "Weight Mean Standard Error")
+      addDataFrame(nwData[,c("STRAT","ST_ERR_WGT")], row.names = FALSE, sheet22)
+      sheet23 <- createSheet(wb, sheetName = "Weight Total")
+        addDataFrame(nwData[,c("STRAT","BIOMASS")], row.names = FALSE, sheet23)
+      sheet24 <- createSheet(wb, sheetName = "Weight Total Standard Error")
+        addDataFrame(nwData[,c("STRAT","ST_ERR_BIOMASS")], row.names = FALSE, sheet24)
+    saveWorkbook(wb, "Mar.stranal.xlsx")
+    
+    cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
+  }else{
+    wbName = "Mar.stranal.xlsx"
+    md = data.frame(unlist(metadata))
+    colnames(md)<-"Value"
+    wb<-createWorkbook(type="xlsx")
+    sheet1 <- createSheet(wb, sheetName = "QUERY")
+      addDataFrame(md, row.names = TRUE, sheet1)
+    sheet2 <- createSheet(wb, sheetName = "Strata Info")
+      addDataFrame(dfStrata, row.names = FALSE, sheet2)
+    sheet3 <- createSheet(wb, sheetName = "Numbers and Weights by Strata")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),dfNWAgg,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet3)
+      rm(this)
+    sheet3a <- createSheet(wb, sheetName = "Numbers and Weights by Set")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),dfNWSets,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet3a)
+      rm(this)
+    sheet4 <- createSheet(wb, sheetName = "Age Length Key")
+      addDataFrame(ageLengthKey$alk, row.names = TRUE, sheet4)
+    sheet5 <- createSheet(wb, sheetName = "Age Table")
+      addDataFrame(ageLengthKey$age_table, row.names = TRUE, sheet5)
+    sheet6 <- createSheet(wb, sheetName = "Age Length Weight")
+      addDataFrame(ageLengthKey$alw, row.names = TRUE, sheet6)
+    sheet7 <- createSheet(wb, sheetName = "Length By Set")
+      addDataFrame(lengthsData$length_by_set, row.names = FALSE, sheet7)
+    sheet8 <- createSheet(wb, sheetName = "Length Mean")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet8)
+      rm(this)
+    sheet9 <- createSheet(wb, sheetName = "Length Mean Standard Error")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet9)
+      rm(this)
+    sheet10 <- createSheet(wb, sheetName = "Length Total")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet10)
+      rm(this)
+    sheet11 <- createSheet(wb, sheetName = "Length Total Standard Error")
+      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total_se,all.x=T)
+      addDataFrame(this, row.names = FALSE, sheet11)
+      rm(this)
+    saveWorkbook(wb, "Mar.stranal.xlsx")
+    cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
+  }
+  return(res)
   }

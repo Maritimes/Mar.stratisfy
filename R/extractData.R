@@ -1,12 +1,21 @@
 #' @title extractData
 #' @description This function doesn't do anything yet.
-#' @param requested  The default value is \code{NULL}.  
+#' @param requested  The default value is \code{NULL}. This determines which 
+#' analytic will be performed.
+#' @param agency  The default value is \code{NULL}. 
+#' @param dfSpp  The default value is \code{NULL}.
+#' @param type  The default value is \code{NULL}.
+#' @param missions  The default value is \code{NULL}.
+#' @param strata  The default value is \code{NULL}.
+#' @param bySex  The default value is \code{NULL}.
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
 #' @export
-extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NULL, strata = NULL){
-  getCatch<-function(agency, spp, missions, strata){
+extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
+                      missions = NULL, strata = NULL, bySex = NULL){
+  getCatch<-function(agency, dfSpp, missions, strata){
+    spp=dfSpp$SPEC
     if (agency =="DFO"){
         sql <-
           paste("select C.mission,C.setno,C.size_class,C.totwgt,C.sampwgt,C.totno,C.calwt
@@ -39,18 +48,18 @@ extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NU
     if (nrow(raw.gscat)<1) stop("Error: No catch data can be found for your selection")
     return(raw.gscat)
   }
-   getInf<-function(agency){
+   getInf<-function(agency, missions, strata, type){
      if (agency=='DFO'){
        sql<-
          #no area filter??
-         paste("select i.mission, i.setno,sdate,time,strat,
-          area unit_area,slat,slong,dmin,dmax,depth, dur,dist
+         paste("select i.mission, i.setno,i.sdate,i.time,i.strat,
+          i.area unit_area,i.slat,i.slong,i.dmin,i.dmax,i.depth, i.dur,i.dist
           from 
           groundfish.gsinf i 
           where 
-          i.MISSION IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),")
-          AND strat IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
-          AND type IN (", .GlobalEnv$str_type,")
+          i.MISSION IN (",Mar.utils::SQL_in(missions),")
+          AND i.strat IN (",Mar.utils::SQL_in(strata),")
+          AND i.type IN (",type,")
           ORDER BY i.mission, i.setno", sep="")
      }else if (agency=="NMFS"){
        #distance was assumed to be 1.75, but appears to be dopdistb
@@ -58,39 +67,75 @@ extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NU
          paste("SELECT CRUISE6 mission,to_number(station) setno, begin_est_towdate sdate, est_time time, STRATUM strat, 
           area unit_area,  BEGLAT slat, BEGLON slong, mindepth dmin, maxdepth dmax, avgdepth depth, towdur dur, dopdistb dist 
           FROM USNEFSC.USS_STATION 
-          WHERE CRUISE6 IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),")
-          AND STRATUM IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
-          AND to_number(SHG) <= ",.GlobalEnv$str_type," 
+          WHERE CRUISE6 IN (",Mar.utils::SQL_in(missions),")
+          AND STRATUM IN (",Mar.utils::SQL_in(strata),")
+          AND to_number(SHG) <= ",type," 
           ORDER BY CRUISE6,to_number(station)", sep="")
      }
      raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
-     #if (agency.gui=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
+     #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
       return(raw.gsinf)
       }
-   getDet<-function(agency){
+   getDet<-function(agency, missions, strata, dfSpp, bySex, type){
+     spp=dfSpp$SPEC
+     sppLgrp = dfSpp$LGRP
+     #orig stranal is inconsistent with berried females:
+     # -if analysis is done by sex, berried females (fsex = 3) are ignored
+     # -if analysis is done not by sex, they are included
+     # The following block does this so that the results match, but it seems 
+     # like a bad idea
+     if(bySex){
+       sexFilt = " (d.FSEX IS NULL OR d.fsex IN (0,1,2)) AND "
+     }else{
+       sexFilt = ""
+     }
      if (agency=='DFO'){
        #       AND i.STRAT IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
-       sql<-paste("select d.mission,d.setno,d.size_class,d.fsex,d.age,d.fwt,         
-       decode(",.GlobalEnv$str_dfSpp$LGRP,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen,          
+       # results not matching - discovered that APL does NOT limit det results by strata,
+       # or type
+       sql<-paste("select d.mission,d.setno,d.size_class,
+      nvl(d.fsex,0) fsex,d.age, d.fwt,         
+       decode(",sppLgrp,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen,          
        s.lgrp binwidth,s.lfsexed bysex, d.clen          
        from          
        groundfish.gsdet d, groundfish.gsspec s, groundfish.gsinf i 
        WHERE 
        s.spec=d.spec AND  
        d.MISSION = i.MISSION AND
-       d.SETNO = i.SETNO AND
-       d.MISSION IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),") AND 
-       d.SPEC=",.GlobalEnv$str_dfSpp[,1]," 
+       d.SETNO = i.SETNO AND 
+      -- (d.FSHNO IS NOT NULL OR d.FWT IS NOT NULL) AND
+       d.MISSION IN (",Mar.utils::SQL_in(missions),") AND 
+       -- i.strat IN (",Mar.utils::SQL_in(strata),") AND
+       -- i.type IN (",type,") AND
+       ",sexFilt,"
+       d.SPEC=",spp," 
        ORDER BY d.mission,d.setno", sep="")
      raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
+
+     #since berried and normal females get combined, add the CLEN for sets
+     # raw.gsdet = 
+     #   aggregate(list(CLEN = raw.gsdet$CLEN),
+     #             by = list(MISSION=raw.gsdet$MISSION,
+     #                       SETNO =raw.gsdet$SETNO,
+     #                       SIZE_CLASS =raw.gsdet$SIZE_CLASS,
+     #                       FSEX =raw.gsdet$FSEX,
+     #                       #AGE =raw.gsdet$AGE,
+     #                       #FWT =raw.gsdet$FWT,
+     #                       FLEN =raw.gsdet$FLEN,
+     #                       BINWIDTH =raw.gsdet$BINWIDTH,
+     #                       BYSEX =raw.gsdet$BYSEX
+     #                       ),
+     #             FUN = sum, na.rm=TRUE)
+     
      }else if (agency=="NMFS"){
        #missing fsex, sizeclass,clen
-       sql1<- paste("select cruise6 mission, to_number(station) setno, age, length, avg(indwt) fwt,
-        decode(", .GlobalEnv$str_dfSpp[,3],",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen
+       sql1<- paste("select cruise6 mission, to_number(station) setno, length, 
+        age, avg(indwt) fwt,
+        decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen
         from usnefsc.uss_detail
-        where to_number(svspp)=",.GlobalEnv$str_dfSpp[,1],"
-        AND CRUISE6 IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),")
-        AND STRATUM IN (",Mar.utils::SQL_in(.GlobalEnv$str_dfStrata[,1]),")
+        where to_number(svspp)=",spp,"
+        AND CRUISE6 IN (",Mar.utils::SQL_in(missions),")
+        AND STRATUM IN (",Mar.utils::SQL_in(strata),")
         group by cruise6,station,age,length
         ORDER BY cruise6, to_number(station)", sep="")
        raw.gsdet1<-oracle_cxn$thecmd(oracle_cxn$channel, sql1 )
@@ -98,8 +143,8 @@ extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NU
        sql2<- paste("select cruise6 mission, catchsex fsex, station setno,length, 
         sum(expnumlen) clen, 1 size_class
         from usnefsc.uss_lengths
-        where to_number(svspp)=",.GlobalEnv$str_dfSpp[,1],"
-        and cruise6 in (",Mar.utils::SQL_in(.GlobalEnv$str_dfMissions[,1]),")
+        where to_number(svspp)=",spp,"
+        and cruise6 in (",Mar.utils::SQL_in(missions),")
         and catchsex in ('0','1','2')
         group by cruise6,station,length, catchsex
         ORDER BY cruise6, to_number(station)",sep="")
@@ -111,8 +156,8 @@ extractData<-function(requested = NULL, agency = NULL, spp = NULL, missions = NU
    }
 
   switch(requested, 
-         "catch" = getCatch(agency,spp,missions, strata), 
-         "inf" = getInf(agency),
-         "det" = getDet(agency)
+         "catch" = getCatch(agency,dfSpp,missions, strata), 
+         "inf" = getInf(agency, missions, strata, type),
+         "det" = getDet(agency, missions, strata, dfSpp, bySex, type)
   )
 }

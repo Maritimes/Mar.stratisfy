@@ -4,10 +4,24 @@
 \alias{calcNumsWeights}
 \title{calcNumsWeights}
 \usage{
-calcNumsWeights(requested = NULL)
+calcNumsWeights(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
+  dfNWSets = NULL, dfStrata = NULL, towDist = NULL, dfNWAgg = NULL)
 }
 \arguments{
-\item{requested}{The default value is \code{NULL}.}
+\item{requested}{The default value is \code{NULL}. This determines which 
+analytic will be performed.}
+
+\item{dfRawCatch}{The default value is \code{NULL}.}
+
+\item{dfRawInf}{The default value is \code{NULL}.}
+
+\item{dfNWSets}{The default value is \code{NULL}.}
+
+\item{dfStrata}{The default value is \code{NULL}.}
+
+\item{towDist}{The default value is \code{NULL}.}
+
+\item{dfNWAgg}{The default value is \code{NULL}.}
 }
 \description{
 This function calculates the numbers and weights.
