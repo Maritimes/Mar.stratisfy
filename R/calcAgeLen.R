@@ -16,10 +16,11 @@
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils SQL_in
+#' @importFrom Mar.utils st_err
 #' @importFrom stats setNames
 #' @importFrom stats reshape
 #' @importFrom reshape2 dcast
-#' @export
+#' @importFrom data.table as.data.table
 calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL, 
                      dfRawDet=NULL, dfRawInf = NULL, dfStrata = NULL, 
                      dfSpp=NULL, towDist=NULL,  sexed = NULL,
@@ -71,29 +72,18 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     }
     agelen$FLEN<-agelen$FLEN+(agelen$BINWIDTH*.5)-.5
     
-    ##
-    
-    ##
     if (sexed) {
       allfields <-c("STRAT","MISSION","SETNO", "FSEX", "FLEN","CAGE") 
     }else{
       allfields <-c("STRAT","MISSION","SETNO","FLEN","CAGE")
     }
-    #---
-    lset=agelen[,allfields]
-    
-    # li = which(lset$CAGE==0) 
-    # lset$FLEN[li] = unique(lset$FLEN)[1]
 
-    #----
+    lset=agelen[,allfields]
     lset <- aggregate(lset[,allfields]$CAGE,
                       lset[allfields !="CAGE"],
                       FUN=sum)
-    #rm(agelen)
-    #lset = lset[lset$x>0,]
     lset <- lset[order(lset$STRAT,lset$MISSION,lset$SETNO),]
-    #the following fills out the lset data with all possible length groups 
-    #for all sexes
+    #get lset data with all possible length groups for all sexes
     rng = range(lset$FLEN, na.rm = T)
     allLength = seq(min(rng),max(rng), by=sppLgrp)
 
@@ -174,14 +164,19 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
                  lset = lset)
     return(results)
   }
-  calcAgeKey<-function(agelen, dfSpp, lengthsTotals, lset){
-
+  calcAgeKey<-function(agelen, dfSpp, lengthsTotals, lset, dfStrata){
+    if (nrow(agelen[!is.na(agelen$AGE),])==0)return(-1)
     sppLgrp = dfSpp$LGRP
+    
+    setID=unique(lset[lset$STRAT!="FAKE",c("STRAT", "MISSION", "SETNO")])
+    setID = setID[order(setID$STRAT,setID$MISSION,setID$SETNO),]
+    
+    stratID=dfStrata[,c("STRAT", "TUNITS")]
     
     # Age Length Key -----------------------------------------------------------
     alk<-agelen[,c("AGE","FLEN","CAGE","SETNO")]
     alk<-alk[!is.na(alk$AGE), ]
-    if (nrow(alk)<1){     #only try age calculations if we have ages
+    if (nrow(alk)<1){     
       res = list(alk="No ages in data", alw="No ages in data")
     }else{
       all.ages = seq(min(alk$AGE),max(alk$AGE)) 
@@ -216,9 +211,6 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       alw$FLEN<-NULL
       alw<-alw[order(rownames(alw)),]
       alw[is.na(alw)]<-0
-      #The means below don't match APL - STRANAL
-        # alw<-cbind(alw,"MEAN"=rowMeans(alw, na.rm = TRUE))
-        # alw<-rbind(alw, "MEAN"=colMeans(alw, na.rm = TRUE))
 
       # Age Table --------------------------------------------------------------    
 
@@ -240,47 +232,63 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       lengths1[is.na(lengths1)]<-0
       age_table<-ages_prop*lengths1$lengths
       
-      # ages_prop$FLEN<-as.numeric(rownames(ages_prop))
-      # ageset<-lset[lset$STRAT!="FAKE",]
-      # colnames(ageset)[which(names(ageset) == "x")] <- "CAGE"
-      # ageset<-ageset[order(ageset$STRAT,ageset$MISSION, ageset$SETNO),]
-      # 
-      # ages_pre<-merge(ageset,ages_prop, by="FLEN")
-      # ages_pre<-as.data.table(ages_pre)
-      # browser()
-      # theseages<-names(alk_ap)
-      # ages_pre[, (theseages) := lapply(.SD,function(x) x * ages_pre[['CAGE']] ), 
-      #          .SDcols = theseages]
-      # age_by_set<-aggregate(.~STRAT + MISSION + SETNO, data=ages_pre, sum)
-      # age_by_set<-age_by_set[order(age_by_set$STRAT,age_by_set$SETNO),]
-      # age_by_set$FLEN<-NULL 
-      # age_by_set$CAGE<-NULL
-      # 
-      # age_mean<-age_by_set
-      # age_mean$SETNO<-NULL
-      # age_mean$MISSION<-NULL
-      # #age_mean = age_mean[rowSums(age_mean[2:ncol(age_mean)])>0,]
-      # age_mean<-aggregate(.~STRAT, data=age_mean, mean)
-      # setnames(age_mean,
-      #          old=names(age_mean[,2:ncol(age_mean)]), 
-      #          new=c(paste0("age_",theseages,"_mean")))
-      # 
-      # 
-      # 
-      # 
-      # #colSums(lengthsData$length_total[2:ncol(lengthsData$length_total)])
-      # crap = as.data.frame(cbind(STRAT = lengthsData$length_total$STRAT,TOTAL = rowSums(lengthsData$length_total[2:ncol(lengthsData$length_total)])))
-      # theseages<-gsub(pattern = "AGE_", replacement = "", x = c(names(alk_ap)))
-      # 
+      # Age by Set -------------------------------------------------------------  
+      ages_prop$FLEN<-as.numeric(rownames(ages_prop))
+      ageset<-lset[lset$STRAT!="FAKE",]
+      colnames(ageset)[which(names(ageset) == "x")] <- "CAGE"
+      ageset<-ageset[order(ageset$STRAT,ageset$MISSION, ageset$SETNO),]
+      ages_pre<-merge(ageset,ages_prop, by="FLEN")
+      ages_pre<-as.data.table(ages_pre)
+      theseages<-names(alk_ap)
+      ages_pre[, (theseages) := lapply(.SD,function(x) x * ages_pre[['CAGE']] ), 
+                .SDcols = theseages]
+      age_by_set<-aggregate(.~STRAT + MISSION + SETNO, data=ages_pre, sum)
+      age_by_set<-age_by_set[order(age_by_set$STRAT,age_by_set$SETNO),]
+      age_by_set$FLEN<-NULL 
+      age_by_set$CAGE<-NULL
+      age_by_set=merge(setID,age_by_set, all.x=TRUE)
+      age_by_set[is.na(age_by_set)]<-0
+      # Age Mean ---------------------------------------------------------------  
+      age_mean<-age_by_set
+      age_mean$SETNO<-NULL
+      age_mean$MISSION<-NULL
+      age_mean<-aggregate(.~STRAT, data=age_mean, mean)
+
+      # Age Mean SE ------------------------------------------------------------ 
+      age_mean_se<-age_by_set
+      age_mean_se$SETNO<-NULL
+      age_mean_se$MISSION<-NULL
+      age_mean_se<-aggregate(.~STRAT, data=age_mean_se, st_err)
+      age_mean_se[is.na(age_mean_se)]<-0
       
+      # Age Totals ------------------------------------------------------------- 
+      age_pretotal<-as.data.table(merge(stratID,age_by_set, by="STRAT"))
+      age_pretotal[, (theseages) := 
+                  lapply(.SD,function(x) x * age_pretotal[['TUNITS']] ),
+                    .SDcols = theseages]
+      age_pretotal$TUNITS<-NULL
+      age_pretotal$MISSION<-NULL
+      age_pretotal$SETNO<-NULL
       
-      res = list(alk=alk, alw=alw, age_table=age_table)
+      age_total<-aggregate(.~STRAT, data=age_pretotal, mean)
+      age_total=merge(stratID,age_total, all.x=TRUE)
+      age_total$TUNITS<-NULL
+      age_total[is.na(age_total)]<-0
+      
+      age_total_se<-aggregate(.~STRAT, data=age_pretotal, st_err)
+      age_total_se=merge(stratID,age_total_se, all.x=TRUE)
+      age_total_se$TUNITS<-NULL
+      age_total_se[is.na(age_total_se)]<-0
+      
+      res = list(alk=alk, alw=alw, age_table=age_table, age_mean=age_mean,
+                 age_by_set = age_by_set, age_mean_se= age_mean_se, 
+                 age_total=age_total, age_total_se = age_total_se)
     }
     return(res)
   }
   switch(requested, 
          "lengths" = calcLengths( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, dfSpp, towDist, sexed),
-         "ageKey" = calcAgeKey(agelen, dfSpp, lengthsTotals, lset)
+         "ageKey" = calcAgeKey(agelen, dfSpp, lengthsTotals, lset, dfStrata)
   )
 }
 

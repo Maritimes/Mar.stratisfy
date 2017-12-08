@@ -11,7 +11,6 @@
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
-#' @export
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, bySex = NULL){
   getCatch<-function(agency, dfSpp, missions, strata){

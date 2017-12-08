@@ -11,7 +11,6 @@
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils SQL_in
-#' @export
 calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL, 
                           dfNWSets = NULL, dfStrata = NULL, towDist = NULL,
                           dfNWAgg = NULL){

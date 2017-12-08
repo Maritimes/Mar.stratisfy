@@ -102,17 +102,16 @@ stranal<-function(usepkg = 'roracle',
   dfRawCatch <- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT)
   dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, type=type)
   dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, dfSpp = dfSpp, bySex = bySex, type=type)
+  
+
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
+  
 
   dfStrata <- merge(dfStrata, calcNumsWeights('strataProp', dfNWSets=dfNWSets, 
                                              dfStrata=dfStrata, dfNWAgg=dfNWAgg), all.x=T)
     allStrat = as.data.frame(dfStrata[,"STRAT"])
     colnames(allStrat)<-"STRAT"
-  
-  nwData <- merge(allStrat, dfNWAgg, all.x = TRUE)
-  nwData[is.na(nwData)]<-0
-  
   
   lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
                 dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
@@ -120,10 +119,11 @@ stranal<-function(usepkg = 'roracle',
     agelen<-lengthsData$agelen
     lengthsTotals<-lengthsData$length_total
     lset = lengthsData$lset
+  
   ageLengthKey <-calcAgeLen('ageKey', agelen=agelen, dfSpp=dfSpp, lengthsTotals 
-                            = lengthsTotals, lset = lset)
+                             = lengthsTotals, lset = lset, dfStrata=dfStrata)
   metadata=list("Mar.stranal" = utils::packageDescription('Mar.stranal')$Version,
-                "Date" = Sys.time(),
+                "Date" = as.character(Sys.time()),
                 "Data Source" = agency,
                 "Strata" = paste("'", paste(strata, collapse="','"),"'", sep=""),
                 "Species" = paste0(dfSpp$CNAME, " (", dfSpp$SPEC ,")"),
@@ -133,6 +133,42 @@ stranal<-function(usepkg = 'roracle',
                 "Stratum Area Table" =  strataTable,
                 "Experiment Type" = type,
                 "ALK Modifications" = 'Not implemented yet')
+  
+  nwData <- merge(allStrat, dfNWAgg, all.x = TRUE)
+    nwData[is.na(nwData)]<-0
+    #add Column Totals
+    nwData = rbind(nwData,c("STRAT"="TOTAL",colSums(nwData[,!(colnames(nwData) =="STRAT")])))
+    
+  dfNWSets = merge(cbind("STRAT"= dfStrata$STRAT),dfNWSets,all.x=T)
+    dfNWSets[is.na(dfNWSets)]<-0
+    
+  length_by_strat_mean = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
+    length_by_strat_mean[is.na(length_by_strat_mean)]<-0
+  length_by_strat_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
+    length_by_strat_se[is.na(length_by_strat_se)]<-0
+  length_total = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
+    length_total[is.na(length_total)]<-0
+    #add Column Totals
+    length_total = rbind(length_total,c("STRAT"="TOTAL",colSums(length_total[,!(colnames(length_total) =="STRAT")])))
+  length_total_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total_se,all.x=T)
+    length_total_se[is.na(length_total_se)]<-0
+    
+  weight_by_set = merge(dfRawInf[,c("STRAT","MISSION","SETNO")], dfNWSets[,c("STRAT","MISSION","SETNO", "TOTWGT")], all.x=TRUE)
+  
+  age_total = ageLengthKey$age_total
+  #add Column Totals
+  age_total = rbind(age_total,c("STRAT"="TOTAL",colSums(age_total[,!(colnames(age_total) =="STRAT")])))
+  
+  #Add the totals to Strata for approp columns
+  dfStrataDataCols =c("SQNM","TUNITS","AREAPROP","AREAPROPSTERR","AREATOT","AREATOTSTERR")
+  dfStrataDataTots = colSums(dfStrata[,dfStrataDataCols],na.rm = TRUE)
+  names(dfStrataDataTots) <-dfStrataDataCols
+  dfStrataOthCols = rep(NA, length(dfStrata[,!(colnames(dfStrata) %in% dfStrataDataCols)]))
+  names(dfStrataOthCols) <- colnames(dfStrata[,!(colnames(dfStrata) %in% dfStrataDataCols)])
+  totals= data.frame(t(c(dfStrataDataTots,dfStrataOthCols)))
+  dfStrata = rbind(dfStrata,totals)  
+
+  
   res=list(metadata = metadata,
            strataInfo = dfStrata,
            nwInfo = nwData,
@@ -165,24 +201,31 @@ stranal<-function(usepkg = 'roracle',
       sheet10 <- createSheet(wb, sheetName = "Length By Set")
         addDataFrame(lengthsData$length_by_set, row.names = FALSE, sheet10)
       sheet11 <- createSheet(wb, sheetName = "Length Mean")
-        addDataFrame(lengthsData$length_by_strat_mean, row.names = FALSE, sheet11)
+        addDataFrame(length_by_strat_mean, row.names = FALSE, sheet11)
       sheet12 <- createSheet(wb, sheetName = "Length Mean Standard Error")
-        addDataFrame(lengthsData$length_by_strat_se, row.names = FALSE, sheet12)
+        addDataFrame(length_by_strat_se, row.names = FALSE, sheet12)
       sheet13 <- createSheet(wb, sheetName = "Length Total")
-        addDataFrame(lengthsData$length_total, row.names = FALSE, sheet13)
+        addDataFrame(length_total, row.names = FALSE, sheet13)
       sheet14 <- createSheet(wb, sheetName = "Length Total Standard Error")
-        addDataFrame(lengthsData$length_total_se, row.names = FALSE, sheet14)
-      sheet15 <- createSheet(wb, sheetName = "Age By Set")
-      sheet16 <- createSheet(wb, sheetName = "Age Mean")
-      sheet17 <- createSheet(wb, sheetName = "Age Mean Standard Error")
-      sheet18 <- createSheet(wb, sheetName = "Age Total")
-      sheet19 <- createSheet(wb, sheetName = "Age Total Standard Error")
+        addDataFrame(length_total_se, row.names = FALSE, sheet14)
+      if (class(ageLengthKey) == "list"){
+        sheet15 <- createSheet(wb, sheetName = "Age By Set")
+          addDataFrame(ageLengthKey$age_by_set, row.names = FALSE, sheet15)
+        sheet16 <- createSheet(wb, sheetName = "Age Mean")
+          addDataFrame(ageLengthKey$age_mean, row.names = FALSE, sheet16)
+        sheet17 <- createSheet(wb, sheetName = "Age Mean Standard Error")
+          addDataFrame(ageLengthKey$age_mean_se, row.names = FALSE, sheet17)
+        sheet18 <- createSheet(wb, sheetName = "Age Total")
+          addDataFrame(age_total, row.names = FALSE, sheet18)
+        sheet19 <- createSheet(wb, sheetName = "Age Total Standard Error")
+          addDataFrame(ageLengthKey$age_total_se, row.names = FALSE, sheet19)
+      }
       sheet20 <- createSheet(wb, sheetName = "Weight by Set")
-        #addDataFrame(nwData[,c("STRAT", "TOT_WGT")], row.names = FALSE, sheet20)
+        addDataFrame(weight_by_set, row.names = FALSE, sheet20)
       sheet21 <- createSheet(wb, sheetName = "Weight Mean")
         addDataFrame(nwData[,c("STRAT","MEAN_WGT")], row.names = FALSE, sheet21)
       sheet22 <- createSheet(wb, sheetName = "Weight Mean Standard Error")
-      addDataFrame(nwData[,c("STRAT","ST_ERR_WGT")], row.names = FALSE, sheet22)
+        addDataFrame(nwData[,c("STRAT","ST_ERR_WGT")], row.names = FALSE, sheet22)
       sheet23 <- createSheet(wb, sheetName = "Weight Total")
         addDataFrame(nwData[,c("STRAT","BIOMASS")], row.names = FALSE, sheet23)
       sheet24 <- createSheet(wb, sheetName = "Weight Total Standard Error")
@@ -200,13 +243,9 @@ stranal<-function(usepkg = 'roracle',
     sheet2 <- createSheet(wb, sheetName = "Strata Info")
       addDataFrame(dfStrata, row.names = FALSE, sheet2)
     sheet3 <- createSheet(wb, sheetName = "Numbers and Weights by Strata")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),dfNWAgg,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet3)
-      rm(this)
+      addDataFrame(nwData, row.names = FALSE, sheet3)
     sheet3a <- createSheet(wb, sheetName = "Numbers and Weights by Set")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),dfNWSets,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet3a)
-      rm(this)
+      addDataFrame(dfNWSets, row.names = FALSE, sheet3a)
     sheet4 <- createSheet(wb, sheetName = "Age Length Key")
       addDataFrame(ageLengthKey$alk, row.names = TRUE, sheet4)
     sheet5 <- createSheet(wb, sheetName = "Age Table")
@@ -216,21 +255,26 @@ stranal<-function(usepkg = 'roracle',
     sheet7 <- createSheet(wb, sheetName = "Length By Set")
       addDataFrame(lengthsData$length_by_set, row.names = FALSE, sheet7)
     sheet8 <- createSheet(wb, sheetName = "Length Mean")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet8)
-      rm(this)
+      addDataFrame(length_by_strat_mean, row.names = FALSE, sheet8)
     sheet9 <- createSheet(wb, sheetName = "Length Mean Standard Error")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet9)
-      rm(this)
+      addDataFrame(length_by_strat_se, row.names = FALSE, sheet9)
     sheet10 <- createSheet(wb, sheetName = "Length Total")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet10)
-      rm(this)
+      addDataFrame(length_total, row.names = FALSE, sheet10)
     sheet11 <- createSheet(wb, sheetName = "Length Total Standard Error")
-      this = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total_se,all.x=T)
-      addDataFrame(this, row.names = FALSE, sheet11)
-      rm(this)
+      addDataFrame(length_total_se, row.names = FALSE, sheet11)
+      
+      if (class(ageLengthKey)== "list"){
+        sheet12 <- createSheet(wb, sheetName = "Age By Set")
+          addDataFrame(ageLengthKey$age_by_set, row.names = FALSE, sheet12)
+        sheet13 <- createSheet(wb, sheetName = "Age Mean")
+          addDataFrame(ageLengthKey$age_mean, row.names = FALSE, sheet13)
+        sheet14 <- createSheet(wb, sheetName = "Age Mean Standard Error")
+          addDataFrame(ageLengthKey$age_mean_se, row.names = FALSE, sheet14)
+        sheet15 <- createSheet(wb, sheetName = "Age Total")
+          addDataFrame(age_total, row.names = FALSE, sheet15)
+        sheet16 <- createSheet(wb, sheetName = "Age Total Standard Error")
+          addDataFrame(ageLengthKey$age_total_se, row.names = FALSE, sheet16)
+      }
     saveWorkbook(wb, "Mar.stranal.xlsx")
     cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
   }
