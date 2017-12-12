@@ -7,7 +7,7 @@
 stranal(usepkg = "roracle", agency = "DFO", type = 1, year = 2017,
   season = "SUMMER", strataTable = "GROUNDFISH.GSSTRATUM",
   wingspread = 41, towDist = 1.75, strata = c(440:495), spp = 2526,
-  bySex = F, output = "new")
+  bySex = FALSE, ageBySex = TRUE, output = "new")
 }
 \arguments{
 \item{usepkg}{The default value is \code{'roracle'}, but \code{'rodbc'} is works as well.
@@ -45,9 +45,15 @@ result in a pick list.}
 \item{bySex}{The default value is \code{TRUE}. Setting to \code{NULL} will 
 result in a pick list.}
 
-\item{output}{The default value is \code{new}.  This determines the format of 
-the output Excel file. Setting to \code{classic} will try to emulate the
-original APL STRANAL results}
+\item{ageBySex}{The default value is \code{TRUE}. Note that APL Stranal 
+ignored sex for the results of 'age by set', 'age mean', 'age total' etc.  
+Setting this to FALSE will emulate the APL stranal results.}
+
+\item{output}{The default value is \code{'new'}.  This determines the format of 
+the output Excel file. Setting to \code{'classic'} will emulate the
+original APL STRANAL results, including overriding your parameter for 
+\code{ageBySex} and forcing it to FALSE.  If no excel output is desired, set
+this parameter to an empty string \code{''}}
 }
 \description{
 STRANAL is a program capable of Stratified Analysis of both DFO 

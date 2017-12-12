@@ -7,7 +7,7 @@
 calcAgeLen(requested = NULL, agency = NULL, dfNWSets = NULL,
   dfRawDet = NULL, dfRawInf = NULL, dfStrata = NULL, dfSpp = NULL,
   towDist = NULL, sexed = NULL, agelen = NULL, lengthsTotals = NULL,
-  lset = NULL)
+  lset = NULL, output = NULL, ageBySex = NULL)
 }
 \arguments{
 \item{requested}{The default value is \code{NULL}. This determines which 
@@ -34,6 +34,10 @@ analytic will be performed.}
 \item{lengthsTotals}{The default value is \code{NULL}.}
 
 \item{lset}{The default value is \code{NULL}.}
+
+\item{output}{The default value is \code{NULL}.}
+
+\item{ageBySex}{The default value is \code{NULL}.}
 }
 \description{
 This function calculates the ages and lengths.

@@ -32,7 +32,6 @@
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
 #' @importFrom Mar.utils SQL_in
-#' @export
 getUserInput <-function(requested = NULL, agency = NULL, type = NULL, 
                         strataTable = NULL, year = NULL, season = NULL, 
                         wingspread = NULL, towDist = NULL, spp = NULL, 

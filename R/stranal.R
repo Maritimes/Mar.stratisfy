@@ -35,9 +35,14 @@
 #' result in a pick list.
 #' @param bySex The default value is \code{TRUE}. Setting to \code{NULL} will 
 #' result in a pick list.
-#' @param output The default value is \code{new}.  This determines the format of 
-#' the output Excel file. Setting to \code{classic} will try to emulate the
-#' original APL STRANAL results
+#' @param ageBySex The default value is \code{TRUE}. Note that APL Stranal 
+#' ignored sex for the results of 'age by set', 'age mean', 'age total' etc.  
+#' Setting this to FALSE will emulate the APL stranal results.
+#' @param output The default value is \code{'new'}.  This determines the format of 
+#' the output Excel file. Setting to \code{'classic'} will emulate the
+#' original APL STRANAL results, including overriding your parameter for 
+#' \code{ageBySex} and forcing it to FALSE.  If no excel output is desired, set
+#' this parameter to an empty string \code{''}
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}l
 #' @importFrom RODBC odbcConnect
@@ -72,7 +77,8 @@ stranal<-function(usepkg = 'roracle',
                   towDist = 1.75,
                   strata = c(440:495),
                   spp = 2526,
-                  bySex = F,
+                  bySex = FALSE,
+                  ageBySex = TRUE,
                   output = "new"
                   ){
   
@@ -121,7 +127,10 @@ stranal<-function(usepkg = 'roracle',
     lset = lengthsData$lset
   
   ageLengthKey <-calcAgeLen('ageKey', agelen=agelen, dfSpp=dfSpp, lengthsTotals 
-                             = lengthsTotals, lset = lset, dfStrata=dfStrata)
+                             = lengthsTotals, lset = lset, dfStrata=dfStrata, 
+                            sexed = sexed, output = output, ageBySex = ageBySex)
+  lengthsData$agelen<-NULL
+  lengthsData$lset<-NULL
   metadata=list("Mar.stranal" = utils::packageDescription('Mar.stranal')$Version,
                 "Date" = as.character(Sys.time()),
                 "Data Source" = agency,
@@ -136,7 +145,7 @@ stranal<-function(usepkg = 'roracle',
   
   nwData <- merge(allStrat, dfNWAgg, all.x = TRUE)
     nwData[is.na(nwData)]<-0
-    #add Column Totals
+
     nwData = rbind(nwData,c("STRAT"="TOTAL",colSums(nwData[,!(colnames(nwData) =="STRAT")])))
     
   dfNWSets = merge(cbind("STRAT"= dfStrata$STRAT),dfNWSets,all.x=T)
@@ -144,21 +153,27 @@ stranal<-function(usepkg = 'roracle',
     
   length_by_strat_mean = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
     length_by_strat_mean[is.na(length_by_strat_mean)]<-0
+    lengthsData$length_by_strat_mean<-length_by_strat_mean
+    
   length_by_strat_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
     length_by_strat_se[is.na(length_by_strat_se)]<-0
+    lengthsData$length_by_strat_se<-length_by_strat_se
+    
   length_total = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
     length_total[is.na(length_total)]<-0
     #add Column Totals
     length_total = rbind(length_total,c("STRAT"="TOTAL",colSums(length_total[,!(colnames(length_total) =="STRAT")])))
+    lengthsData$length_total<-length_total
   length_total_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total_se,all.x=T)
     length_total_se[is.na(length_total_se)]<-0
+    lengthsData$length_total_se<-length_total_se
     
   weight_by_set = merge(dfRawInf[,c("STRAT","MISSION","SETNO")], dfNWSets[,c("STRAT","MISSION","SETNO", "TOTWGT")], all.x=TRUE)
   
   age_total = ageLengthKey$age_total
-  #add Column Totals
-  age_total = rbind(age_total,c("STRAT"="TOTAL",colSums(age_total[,!(colnames(age_total) =="STRAT")])))
-  
+    age_total = rbind(age_total,c("STRAT"="TOTAL",colSums(age_total[,!(colnames(age_total) =="STRAT")])))
+    ageLengthKey$age_total<-age_total
+    
   #Add the totals to Strata for approp columns
   dfStrataDataCols =c("SQNM","TUNITS","AREAPROP","AREAPROPSTERR","AREATOT","AREATOTSTERR")
   dfStrataDataTots = colSums(dfStrata[,dfStrataDataCols],na.rm = TRUE)
@@ -175,8 +190,9 @@ stranal<-function(usepkg = 'roracle',
            lengthInfo = lengthsData,
            ageInfo = ageLengthKey
   )
+  wbName = "Mar_stranal.xlsx"
   if (output=="classic"){
-    wbName = "Mar.stranal.xlsx"
+   
     md = data.frame(unlist(metadata))
     colnames(md)<-"Value"
     wb<-createWorkbook(type="xlsx")
@@ -230,11 +246,10 @@ stranal<-function(usepkg = 'roracle',
         addDataFrame(nwData[,c("STRAT","BIOMASS")], row.names = FALSE, sheet23)
       sheet24 <- createSheet(wb, sheetName = "Weight Total Standard Error")
         addDataFrame(nwData[,c("STRAT","ST_ERR_BIOMASS")], row.names = FALSE, sheet24)
-    saveWorkbook(wb, "Mar.stranal.xlsx")
+    saveWorkbook(wb, wbName)
     
     cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
-  }else{
-    wbName = "Mar.stranal.xlsx"
+  }else if (nchar(output)>0){
     md = data.frame(unlist(metadata))
     colnames(md)<-"Value"
     wb<-createWorkbook(type="xlsx")
@@ -275,7 +290,7 @@ stranal<-function(usepkg = 'roracle',
         sheet16 <- createSheet(wb, sheetName = "Age Total Standard Error")
           addDataFrame(ageLengthKey$age_total_se, row.names = FALSE, sheet16)
       }
-    saveWorkbook(wb, "Mar.stranal.xlsx")
+    saveWorkbook(wb, wbName)
     cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
   }
   return(res)
