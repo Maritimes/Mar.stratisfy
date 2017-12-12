@@ -398,7 +398,7 @@ Please choose a different year, or check your parameters\n***\n")
                                     ORDER BY initcap(US.CNAME)",sep="")
     }
     availSpp = oracle_cxn$thecmd(oracle_cxn$channel, species.query)
-    if (!is.null(spp)){
+    if (nchar(spp)>0){
       if (spp %in% availSpp$SPEC){
         sppChoice <- spp
       }else{

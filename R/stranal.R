@@ -100,7 +100,6 @@ stranal<-function(usepkg = "roracle",
                         dfMissionsStrata=dfMissionsStrata, towDist=towDist, 
                         wingspread=wingspread)
   
-  browser()
   spp = getUserInput("spp", agency = agency, spp=spp, bySex = bySex)
   sexed = spp[[1]]
   dfSpp = spp[[2]]
