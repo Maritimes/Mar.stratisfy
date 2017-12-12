@@ -4,10 +4,9 @@
 \alias{stranal}
 \title{stranal}
 \usage{
-stranal(usepkg = "roracle", agency = "DFO", type = 1, year = 2017,
-  season = "SUMMER", strataTable = "GROUNDFISH.GSSTRATUM",
-  wingspread = 41, towDist = 1.75, strata = c(440:495), spp = 2526,
-  bySex = FALSE, ageBySex = TRUE, output = "new")
+stranal(usepkg = "roracle", agency = "", type = "", year = "",
+  season = "", strataTable = "", wingspread = "", towDist = "",
+  strata = "", spp = "", bySex = "", ageBySex = "", output = "new")
 }
 \arguments{
 \item{usepkg}{The default value is \code{'roracle'}, but \code{'rodbc'} is works as well.

@@ -67,18 +67,18 @@
 #' seems suboptimal, and is retained for now such that APL and R versions of the 
 #' application can be compared. 
 
-stranal<-function(usepkg = 'roracle', 
-                  agency = 'DFO',
-                  type = 1,
-                  year = 2017,
-                  season = "SUMMER",
-                  strataTable = "GROUNDFISH.GSSTRATUM",
-                  wingspread = 41,
-                  towDist = 1.75,
-                  strata = c(440:495),
-                  spp = 2526,
-                  bySex = FALSE,
-                  ageBySex = TRUE,
+stranal<-function(usepkg = "roracle", 
+                  agency = "",
+                  type = "",
+                  year = "",
+                  season = "",
+                  strataTable = "",
+                  wingspread = "",
+                  towDist = "",
+                  strata = "",
+                  spp = "",
+                  bySex = "",
+                  ageBySex = "",
                   output = "new"
                   ){
   
@@ -95,14 +95,16 @@ stranal<-function(usepkg = 'roracle',
 
   wingspread = getUserInput("wingspread", agency=agency, wingspread=wingspread)
   towDist = getUserInput("towDist", towDist=towDist)
-  
+
   dfStrata = getUserInput("strata",agency=agency, strataTable=strataTable, strata = strata, 
                         dfMissionsStrata=dfMissionsStrata, towDist=towDist, 
                         wingspread=wingspread)
-
+  
+  browser()
   spp = getUserInput("spp", agency = agency, spp=spp, bySex = bySex)
   sexed = spp[[1]]
   dfSpp = spp[[2]]
+  ageBySex = spp[[3]]
     rm(spp)
 
   dfRawCatch <- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT)

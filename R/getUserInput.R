@@ -66,10 +66,10 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
   }
   
   getTowDist<-function(towDist){
-    if (!is.null(towDist)){
+    if (nchar(towDist)>0){
      if (as.numeric(towDist)>0 & as.numeric(towDist)<100 ) return(towDist) 
     }
-    twDistPick<-NA
+    towDistPick<-NA
     while(is.na(towDistPick)){
     towDistPick = select.list(c("1.75","other"),
                          preselect=c("1.75"),
@@ -196,7 +196,7 @@ Please enter the survey type:"))
     cat("\n Hmmm. Let me see what years are available that match your criteria...\n")
     availYears = oracle_cxn$thecmd(oracle_cxn$channel, year.query)
     availYears = as.character(availYears[order(availYears$YEAR),1])
-    if (!is.null(year)){
+    if (nchar(year)>0){
       if (year %in% availYears){
         yearpick = year
       }else {
@@ -271,7 +271,6 @@ Please choose a different year, or check your parameters\n***\n")
         }
       }
     }
-    
     #1) STRATA
     if (agency == "DFO"){
       sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
@@ -283,14 +282,13 @@ Please choose a different year, or check your parameters\n***\n")
     return(res)
   }
   
-  
   getStrataTable<-function(strataTable, dfMissionsStrata){
     strataTablePick<-NA 
     availStrataTables<- c("GROUNDFISH.GSSTRATUM","USNEFSC.DFO5ZJM",
                           "USNEFSC.DFO5ZGHNO","USNEFSC.NMFS5ZJM",
                           "USNEFSC.NMFS5ZGHNO","USNEFSC.NMFS5ZJMC",
                           "USNEFSC.NMFS5ZJMU","USNEFSC.NMFS5ZU")
-    if (!is.null(strataTable)){
+    if (nchar(strataTable)>0){
       if (strataTable %in% availStrataTables){
         strataTablePick = strataTable
       }
@@ -341,7 +339,7 @@ Please choose a different year, or check your parameters\n***\n")
   getSpp<-function(agency, spp, bySex){
     sexChoice<-NA
     sppChoice<-NA
-    if (!is.null(bySex)){
+    if (nchar(bySex)>0){
       sexChoice <- bySex
     }else{
     while (is.na(sexChoice)){
@@ -352,8 +350,18 @@ Please choose a different year, or check your parameters\n***\n")
       sexChoice = switch(sexChoice, "Sexed Analysis" = TRUE, "Unsexed Analysis" = FALSE)
     }
     rm(bySex)
+    sexAgePick<-NA
     if (agency =="DFO"){
       if (isTRUE(sexChoice)){
+            while (is.na(sexAgePick)){
+              sexAgePick1 = select.list(c("Show Age Results By Sex",
+                                          "Combine Sexes in Age Results"),
+                                        multiple=F, graphics=T, 
+                                        title="How to Handle Sex In Age Results?")
+              sexAgePick <- switch(sexAgePick1,
+                                   "Show Age Results By Sex" = TRUE, 
+                                   "Combine Sexes in Age Results" = FALSE)
+            }
         species.query.tweak<-"AND LFSEXED = 'Y' "
       } else{
         species.query.tweak<-""
@@ -367,6 +375,16 @@ Please choose a different year, or check your parameters\n***\n")
     }else if (agency=="NMFS"){
       #not ideal - hard coded spp from uss_catch table with more than 1 catchsex
       if (isTRUE(sexChoice)){
+        while (is.na(sexAgePick)){
+          sexAgePick1 = select.list(c("Show Age Results By Sex",
+                                      "Combine Sexes in Age Results"),
+                                    multiple=F, graphics=T, 
+                                    title="How to Handle Sex In Age Results?")
+          sexAgePick <- switch(sexAgePick1,
+                               "Show Age Results By Sex" = TRUE, 
+                               "Combine Sexes in Age Results" = FALSE)
+        }
+        
         species.query.tweak<-"AND TO_NUMBER(SPEC) IN (15,22,26,75,108)"
       } else{
         species.query.tweak<-""
@@ -401,9 +419,10 @@ sex option.  Please select one from the list.\n")
 
     }
     sppChoice = availSpp[availSpp$SPEC %in% sppChoice,]
-    res= list(sexChoice,sppChoice)
+    res= list(sexChoice,sppChoice,sexAgePick)
     return(res)
   }
+ 
   getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata){
 
     strataPick<-NA
@@ -445,6 +464,7 @@ sex option.  Please select one from the list.\n")
          "agency" = getAgency(agency), 
          "type" = getType(agency, type),
          "spp" = getSpp(agency, spp, bySex),
+         "sexAge"= getSexAge(bySex),
          "missionsAndStrata" = getMissionsAndStrata(agency, type, year, season),
          "strataTable" = getStrataTable(strataTable, dfMissionsStrata),
          "strata" = getStrata(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata),
