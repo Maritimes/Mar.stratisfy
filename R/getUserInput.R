@@ -261,11 +261,14 @@ Please choose a different year, or check your parameters\n***\n")
       missionPick=availMissions[,1]
       cat(paste0("\nUsing ",missionPick," - the only  mission matching your criteria\n")) 
     }else {
-      while(is.na(missionPick)){
+      while(is.na(missionPick[1])){
         missionPick <- select.list(availMissions[,1],preselect=availMissions[,1],
-                                   multiple=F, graphics=T, 
+                                   multiple=T, graphics=T, 
                                    title='Mission?')
-        if (!missionPick %in% availMissions) print("You must select a mission")
+        if (!all(missionPick %in% availMissions$MISSION)) {
+          cat("You must select a mission")
+          missionPick<-NA
+        }
       }
     }
     
