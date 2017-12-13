@@ -354,12 +354,12 @@ Please choose a different year, or check your parameters\n***\n")
       if (isTRUE(sexChoice)){
             while (is.na(sexAgePick)){
               sexAgePick1 = select.list(c("Show Age Results By Sex",
-                                          "Combine Sexes in Age Results"),
+                                          "Combine Sexes in Age Results (classic)"),
                                         multiple=F, graphics=T, 
                                         title="How to Handle Sex In Age Results?")
               sexAgePick <- switch(sexAgePick1,
                                    "Show Age Results By Sex" = TRUE, 
-                                   "Combine Sexes in Age Results" = FALSE)
+                                   "Combine Sexes in Age Results (classic)" = FALSE)
             }
         species.query.tweak<-"AND LFSEXED = 'Y' "
       } else{

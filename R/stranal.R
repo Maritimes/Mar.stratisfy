@@ -101,7 +101,7 @@ stranal<-function(usepkg = "roracle",
                         wingspread=wingspread)
   
   spp = getUserInput("spp", agency = agency, spp=spp, bySex = bySex)
-  sexed = spp[[1]]
+  bySex = spp[[1]]
   dfSpp = spp[[2]]
   ageBySex = spp[[3]]
     rm(spp)
@@ -122,14 +122,14 @@ stranal<-function(usepkg = "roracle",
   
   lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
                 dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
-                towDist=towDist, sexed=sexed)
+                towDist=towDist, bySex = bySex)
     agelen<-lengthsData$agelen
     lengthsTotals<-lengthsData$length_total
     lset = lengthsData$lset
   
   ageLengthKey <-calcAgeLen('ageKey', agelen=agelen, dfSpp=dfSpp, lengthsTotals 
                              = lengthsTotals, lset = lset, dfStrata=dfStrata, 
-                            sexed = sexed, output = output, ageBySex = ageBySex)
+                            bySex = bySex, output = output, ageBySex = ageBySex)
   lengthsData$agelen<-NULL
   lengthsData$lset<-NULL
   metadata=list("Mar.stranal" = utils::packageDescription('Mar.stranal')$Version,
