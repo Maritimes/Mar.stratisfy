@@ -7,7 +7,7 @@
 getUserInput(requested = NULL, agency = NULL, type = NULL,
   strataTable = NULL, year = NULL, season = NULL, wingspread = NULL,
   towDist = NULL, spp = NULL, bySex = NULL, strata = NULL,
-  dfMissionsStrata = NULL)
+  dfMissionsStrata = NULL, ageBySex = NULL)
 }
 \arguments{
 \item{requested}{The default value is \code{NULL}. This determines which 
@@ -44,6 +44,9 @@ result in a pick list.}
 will result in a pick list.}
 
 \item{dfMissionsStrata}{The default value is \code{NULL}.  Setting to 
+\code{NULL} will result in a pick list.}
+
+\item{ageBySex}{The default value is \code{NULL}.  Setting to 
 \code{NULL} will result in a pick list.}
 }
 \description{

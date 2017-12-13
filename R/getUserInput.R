@@ -28,6 +28,8 @@
 #' will result in a pick list.
 #' @param dfMissionsStrata   The default value is \code{NULL}.  Setting to 
 #' \code{NULL} will result in a pick list.
+#' @param ageBySex   The default value is \code{NULL}.  Setting to 
+#' \code{NULL} will result in a pick list.
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
@@ -35,7 +37,8 @@
 getUserInput <-function(requested = NULL, agency = NULL, type = NULL, 
                         strataTable = NULL, year = NULL, season = NULL, 
                         wingspread = NULL, towDist = NULL, spp = NULL, 
-                        bySex = NULL, strata = NULL, dfMissionsStrata = NULL){
+                        bySex = NULL, strata = NULL, dfMissionsStrata = NULL,
+                        ageBySex = NULL){
   getAgency<-function(agency){
     if(agency %in% c("DFO","NMFS"))return(agency)
     choice<-select.list(c("DFO","NMFS"), multiple=F, graphics=T, title='Please choose an agency:')
@@ -193,7 +196,7 @@ Please enter the survey type:"))
                              M.SEASON = 'SUMMER'")
       
     }
-    cat("\n Hmmm. Let me see what years are available that match your criteria...\n")
+    cat("\n Checking years matching your criteria...\n")
     availYears = oracle_cxn$thecmd(oracle_cxn$channel, year.query)
     availYears = as.character(availYears[order(availYears$YEAR),1])
     if (nchar(year)>0){
@@ -324,7 +327,7 @@ Please choose a different year, or check your parameters\n***\n")
           cat(paste0("\nUsing ",strataTablePick," - the only  strata table matching your criteria\n")) 
         }else {
           while(is.na(strataTablePick)){
-            if (!strataTablePick %in% availStrataTables) print("You must select a strata table (the number in brackets shows how many of your strata are present in the table)")
+            if (!strataTablePick %in% availStrataTables) cat("\nYou must select a strata table (the number in brackets shows how many of your strata are present in the table)\n")
             
             strataTablePick <- select.list(paste0(availStrataTables[,1]," (",availStrataTables[,2],")"),multiple=F, graphics=T, 
                                            title='Strata Table?')
@@ -336,9 +339,10 @@ Please choose a different year, or check your parameters\n***\n")
   }
   
 
-  getSpp<-function(agency, spp, bySex){
+  getSpp<-function(agency, spp, bySex, ageBySex){
     sexChoice<-NA
     sppChoice<-NA
+    
     if (nchar(bySex)>0){
       sexChoice <- bySex
     }else{
@@ -349,41 +353,41 @@ Please choose a different year, or check your parameters\n***\n")
     }
       sexChoice = switch(sexChoice, "Sexed Analysis" = TRUE, "Unsexed Analysis" = FALSE)
     }
-    sexAgePick<-NA
+    
+    
+    if (!sexChoice){
+      if (nchar(ageBySex)>0)cat("\nYou can't do age by sex without an sexed analysis - reverting to 
+combining sexes in age results\n")
+      sexAgePick<-FALSE
+    }else{
+      sexAgePick<-NA
+      if (ageBySex %in% c(TRUE, FALSE))sexAgePick<-ageBySex
+      while (is.na(sexAgePick)){
+        sexAgePick1 = select.list(c("Show Age Results By Sex",
+                                    "Combine Sexes in Age Results (classic)"),
+                                  multiple=F, graphics=T, 
+                                  title="How to Handle Sex In Age Results?")
+        sexAgePick <- switch(sexAgePick1,
+                             "Show Age Results By Sex" = TRUE, 
+                             "Combine Sexes in Age Results (classic)" = FALSE)
+      }
+    }
+   
     if (agency =="DFO"){
-      if (isTRUE(sexChoice)){
-            while (is.na(sexAgePick)){
-              sexAgePick1 = select.list(c("Show Age Results By Sex",
-                                          "Combine Sexes in Age Results (classic)"),
-                                        multiple=F, graphics=T, 
-                                        title="How to Handle Sex In Age Results?")
-              sexAgePick <- switch(sexAgePick1,
-                                   "Show Age Results By Sex" = TRUE, 
-                                   "Combine Sexes in Age Results (classic)" = FALSE)
-            }
+      if (sexChoice){
         species.query.tweak<-"AND LFSEXED = 'Y' "
       } else{
         species.query.tweak<-""
       }
       species.query=paste("SELECT DISTINCT(SPEC), initcap(CNAME) CNAME, 
-                                    LGRP, LFSEXED 
-                                    FROM GROUNDFISH.GSSPEC 
-                                    WHERE SPEC <> 9999 
-                                    ", species.query.tweak, " 
-                                    ORDER BY initcap(CNAME)",sep="")
+                          LGRP, LFSEXED 
+                          FROM GROUNDFISH.GSSPEC 
+                          WHERE SPEC <> 9999 
+                          ", species.query.tweak, " 
+                          ORDER BY initcap(CNAME)",sep="")
     }else if (agency=="NMFS"){
       #not ideal - hard coded spp from uss_catch table with more than 1 catchsex
-      if (isTRUE(sexChoice)){
-        while (is.na(sexAgePick)){
-          sexAgePick1 = select.list(c("Show Age Results By Sex",
-                                      "Combine Sexes in Age Results"),
-                                    multiple=F, graphics=T, 
-                                    title="How to Handle Sex In Age Results?")
-          sexAgePick <- switch(sexAgePick1,
-                               "Show Age Results By Sex" = TRUE, 
-                               "Combine Sexes in Age Results" = FALSE)
-        }
-        
+      if (sexChoice){
         species.query.tweak<-"AND TO_NUMBER(SPEC) IN (15,22,26,75,108)"
       } else{
         species.query.tweak<-""
@@ -396,6 +400,10 @@ Please choose a different year, or check your parameters\n***\n")
                                     ", species.query.tweak,"
                                     ORDER BY initcap(US.CNAME)",sep="")
     }
+    
+
+    
+   
     availSpp = oracle_cxn$thecmd(oracle_cxn$channel, species.query)
     if (nchar(spp)>0){
       if (spp %in% availSpp$SPEC){
@@ -462,8 +470,7 @@ sex option.  Please select one from the list.\n")
   switch(requested, 
          "agency" = getAgency(agency), 
          "type" = getType(agency, type),
-         "spp" = getSpp(agency, spp, bySex),
-         "sexAge"= getSexAge(bySex),
+         "spp" = getSpp(agency, spp, bySex, ageBySex),
          "missionsAndStrata" = getMissionsAndStrata(agency, type, year, season),
          "strataTable" = getStrataTable(strataTable, dfMissionsStrata),
          "strata" = getStrata(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata),

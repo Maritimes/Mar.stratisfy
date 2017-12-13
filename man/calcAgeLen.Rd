@@ -6,7 +6,7 @@
 \usage{
 calcAgeLen(requested = NULL, agency = NULL, dfNWSets = NULL,
   dfRawDet = NULL, dfRawInf = NULL, dfStrata = NULL, dfSpp = NULL,
-  towDist = NULL, sexed = NULL, agelen = NULL, lengthsTotals = NULL,
+  towDist = NULL, bySex = NULL, agelen = NULL, lengthsTotals = NULL,
   lset = NULL, output = NULL, ageBySex = NULL)
 }
 \arguments{
@@ -27,7 +27,7 @@ analytic will be performed.}
 
 \item{towDist}{The default value is \code{NULL}.}
 
-\item{sexed}{The default value is \code{NULL}.}
+\item{bySex}{The default value is \code{NULL}.}
 
 \item{agelen}{The default value is \code{NULL}.}
 

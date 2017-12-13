@@ -69,7 +69,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       #if sampwgt is na/null, cage is na/null
       if(nrow(agelen[is.na(agelen$SAMPWGT),])>0)
         agelen[is.na(agelen$SAMPWGT),]$CAGE<- NA
-      if(nrow(agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,])>0) 
+      if(nrow(agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),])>0) 
         agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$CAGE<-
         agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$TOTNO*agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$CLEN/agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$RAW_TOTNO
 
@@ -149,7 +149,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     length_by_strat_se<-setNames(aggregate(list(
       MEAN_SE=length_by_set[!colnames(length_by_set) %in% imp]), 
       by=list(STRAT=length_by_set$STRAT), 
-      FUN=Mar.utils::st_err), c("STRAT",colnames(length_by_set_dat)))
+      FUN=st_err), c("STRAT",colnames(length_by_set_dat)))
     length_by_strat_se[is.na(length_by_strat_se)]<-0
     
     length_total =  merge(length_by_strat_mean, dfStrata[,c("STRAT","TUNITS")])
@@ -263,7 +263,6 @@ Reverting to ageBySex=FALSE"))
       alw[is.na(alw)]<-0
 
       # Age Table --------------------------------------------------------------    
-
       alk_ap<-as.data.frame(alk)
       alk_ap$TOTAL<-NULL
       alk_ap<-alk_ap[!rownames(alk_ap) %in% "TOTAL",]
@@ -299,7 +298,6 @@ Reverting to ageBySex=FALSE"))
         lengths = lengths[lengths>0]
         lengths<-as.data.frame(lengths)
       }
-      
       ages_prop_l<-merge(ages_prop,lengths, by="row.names")
       rownames(ages_prop_l)<-ages_prop_l$Row.names
       ages_prop_l$Row.names<-NULL
@@ -349,7 +347,6 @@ Reverting to ageBySex=FALSE"))
         age_by_set[is.na(age_by_set)]<-0
         age_by_set<-age_by_set[order(age_by_set$STRAT,age_by_set$SETNO),]
       }
-
       if (ageBySex == FALSE | output=="classic"){
         age_by_set$FSEX<-NULL
         age_by_set<-aggregate(.~STRAT + MISSION + SETNO, data=age_by_set, sum)
@@ -358,7 +355,6 @@ Reverting to ageBySex=FALSE"))
         age_by_set<-aggregate(.~STRAT + MISSION + SETNO + FSEX, data=age_by_set, sum)
         age_by_set<-age_by_set[order(age_by_set$FSEX, age_by_set$STRAT,age_by_set$SETNO),]
       }
-     
 
        # Age Mean ---------------------------------------------------------------  
       age_mean<-age_by_set
@@ -384,7 +380,7 @@ Reverting to ageBySex=FALSE"))
       
       age_mean$TUNITS<-NULL
       age_mean[is.na(age_mean)]<-0
-      
+ 
       # Age Mean SE ------------------------------------------------------------ 
       age_mean_se<-age_by_set
       age_mean_se$SETNO<-NULL
@@ -394,6 +390,7 @@ Reverting to ageBySex=FALSE"))
         age_mean_se=merge(stratID,age_mean_se, all.x=TRUE)
         age_mean_se<-age_mean_se[order(age_mean_se$STRAT),]
       }else{
+
         age_mean_se<-aggregate(.~STRAT+FSEX, data=age_mean_se, st_err)
         #make empty dataframe
         age_mean_se_all<-age_mean_se[FALSE,]
@@ -409,7 +406,7 @@ Reverting to ageBySex=FALSE"))
       
       age_mean_se$TUNITS<-NULL
       age_mean_se[is.na(age_mean_se)]<-0
-      
+     
       # Age Totals ------------------------------------------------------------- 
       age_pretotal<-as.data.table(merge(stratID,age_by_set, by="STRAT"))
       age_pretotal[, (theseages) := 
@@ -440,7 +437,6 @@ Reverting to ageBySex=FALSE"))
       age_total$TUNITS<-NULL
       age_total[is.na(age_total)]<-0
       
-
       if (ageBySex == FALSE | output=="classic"){
         age_total_se<-aggregate(.~STRAT, data=age_pretotal, st_err)
         age_total_se=merge(stratID,age_total_se, all.x=TRUE)
@@ -460,7 +456,6 @@ Reverting to ageBySex=FALSE"))
       
       age_total_se$TUNITS<-NULL
       age_total_se[is.na(age_total_se)]<-0
-      
       res = list(alk=alk, alw=alw, age_table=age_table, age_mean=age_mean,
                  age_by_set = age_by_set, age_mean_se= age_mean_se, 
                  age_total=age_total, age_total_se = age_total_se)
