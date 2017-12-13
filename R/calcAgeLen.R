@@ -9,7 +9,7 @@
 #' @param dfStrata  The default value is \code{NULL}.
 #' @param dfSpp  The default value is \code{NULL}.
 #' @param towDist  The default value is \code{NULL}.
-#' @param sexed  The default value is \code{NULL}.
+#' @param bySex  The default value is \code{NULL}.
 #' @param agelen  The default value is \code{NULL}.
 #' @param lengthsTotals  The default value is \code{NULL}.
 #' @param lset  The default value is \code{NULL}.
@@ -28,11 +28,11 @@
 #' @importFrom data.table as.data.table
 calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL, 
                      dfRawDet=NULL, dfRawInf = NULL, dfStrata = NULL, 
-                     dfSpp=NULL, towDist=NULL,  sexed = NULL,
+                     dfSpp=NULL, towDist=NULL,  bySex = NULL,
                      agelen = NULL, lengthsTotals = NULL, lset=NULL,
                      output = NULL, ageBySex = NULL){
   calcLengths<-function( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, dfSpp, 
-                         towDist, sexed){
+                         towDist, bySex){
     sppLgrp = dfSpp$LGRP
     #remove records without weight or totalno
     agelen <- dfNWSets
@@ -78,7 +78,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     }
     agelen$FLEN<-agelen$FLEN+(agelen$BINWIDTH*.5)-.5
     
-    if (sexed) {
+    if (bySex) {
       allfields <-c("STRAT","MISSION","SETNO", "FSEX", "FLEN","CAGE") 
     }else{
       allfields <-c("STRAT","MISSION","SETNO","FLEN","CAGE")
@@ -93,7 +93,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     rng = range(lset$FLEN, na.rm = T)
     allLength = seq(min(rng),max(rng), by=sppLgrp)
 
-    if (sexed){
+    if (bySex){
       allSex = unique(lset$FSEX)
       fakeRows = expand.grid(FSEX = allSex, FLEN = allLength)
       fakeRows=fakeRows[,c("FSEX","FLEN")]
@@ -106,7 +106,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     fakeRows$x <- -1
     lset=rbind(lset,fakeRows)
     
-    if (sexed) {
+    if (bySex) {
       length_by_set <- dcast(lset, STRAT + MISSION + SETNO ~ 
                                          FSEX +FLEN, value.var = "x"   )
     }else{
@@ -127,7 +127,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     imp <- c("STRAT","MISSION","SETNO")
     length_by_set_id = length_by_set[imp]
     length_by_set_dat = length_by_set[!colnames(length_by_set) %in% imp]
-    if (sexed) {
+    if (bySex) {
       length_by_set_dat = length_by_set_dat[order(
                       as.numeric(substr(colnames(length_by_set_dat),1,1)),
                       as.numeric(substr(colnames(length_by_set_dat),3,5)))]
@@ -170,7 +170,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
                  lset = lset)
     return(results)
   }
-  calcAgeKey<-function(agelen, dfSpp, lengthsTotals, lset, dfStrata, sexed, 
+  calcAgeKey<-function(agelen, dfSpp, lengthsTotals, lset, dfStrata, bySex, 
                        output, ageBySex){
     if (nrow(agelen[!is.na(agelen$AGE),])==0)return(-1)
     theSexes <- unique(lset$FSEX)
@@ -178,7 +178,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       if(ageBySex==TRUE)cat(paste0("All individuals are FSEX = ",theSexes,"
 Reverting to ageBySex=FALSE"))
       ageBySex == FALSE
-      sexed == FALSE
+      bySex == FALSE
     }
     
     
@@ -194,7 +194,7 @@ Reverting to ageBySex=FALSE"))
     all.ages = seq(min(alk$AGE),max(alk$AGE)) 
     rng = range(alk$FLEN, na.rm = T)
     allLength = seq(min(rng),max(rng), by=sppLgrp)
-    if (sexed){
+    if (bySex){
       alk<-alk[,c("AGE","FLEN","FSEX","CAGE","SETNO")]
       allSex=c(0,1,2)
       al = expand.grid(all.ages,allLength, allSex)
@@ -240,7 +240,7 @@ Reverting to ageBySex=FALSE"))
       alk<-rbind(alk, "TOTAL"=colSums(alk))
       # Age Length Weight ------------------------------------------------------
       
-      if (sexed){
+      if (bySex){
         alw<-  aggregate(FWT~AGE+FLEN+FSEX,data=agelen,FUN=mean)
         alw<-alw[order(alw$FSEX,alw$AGE,alw$FLEN),]
         alw$FWT = alw$FWT / 1000
@@ -271,7 +271,7 @@ Reverting to ageBySex=FALSE"))
       ages_prop<-ifelse(is.nan(ages_prop),0,ages_prop)
       ages_prop<-as.data.frame(ages_prop)
       theseages<-gsub(pattern = "AGE_", replacement = "", x = c(names(ages_prop)))
-      if (sexed){
+      if (bySex){
         
         lengthsTotals_u <- lengthsTotals[,grep(pattern="0_",colnames(lengthsTotals))]
         totals_u<-colSums(lengthsTotals_u)
@@ -307,7 +307,7 @@ Reverting to ageBySex=FALSE"))
       age_table<-ages_prop_l[, -which(names(ages_prop_l) == "lengths")]
       age_table[is.na(age_table)]<-0
       # Age by Set -------------------------------------------------------------  
-      if (sexed){
+      if (bySex){
         colNs=c("FSEX", "FLEN")
         cols=colsplit(rownames(ages_prop)," ", colNs)
         
@@ -468,9 +468,9 @@ Reverting to ageBySex=FALSE"))
   }
   switch(requested, 
          "lengths" = calcLengths( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, 
-                                  dfSpp, towDist, sexed),
+                                  dfSpp, towDist, bySex),
          "ageKey" = calcAgeKey(agelen, dfSpp, lengthsTotals, lset, dfStrata, 
-                               sexed, output, ageBySex)
+                               bySex, output, ageBySex)
   )
 }
 
