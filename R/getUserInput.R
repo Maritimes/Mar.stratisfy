@@ -335,7 +335,7 @@ Please choose a different year, or check your parameters\n***\n")
     return(strataTablePick)
   }
   
-  
+
   getSpp<-function(agency, spp, bySex){
     sexChoice<-NA
     sppChoice<-NA
@@ -349,7 +349,6 @@ Please choose a different year, or check your parameters\n***\n")
     }
       sexChoice = switch(sexChoice, "Sexed Analysis" = TRUE, "Unsexed Analysis" = FALSE)
     }
-    rm(bySex)
     sexAgePick<-NA
     if (agency =="DFO"){
       if (isTRUE(sexChoice)){
