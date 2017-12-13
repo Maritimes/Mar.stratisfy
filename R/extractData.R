@@ -1,16 +1,17 @@
-#' @title extractData
-#' @description This function doesn't do anything yet.
-#' @param requested  The default value is \code{NULL}. This determines which 
-#' analytic will be performed.
-#' @param agency  The default value is \code{NULL}. 
-#' @param dfSpp  The default value is \code{NULL}.
-#' @param type  The default value is \code{NULL}.
-#' @param missions  The default value is \code{NULL}.
-#' @param strata  The default value is \code{NULL}.
-#' @param bySex  The default value is \code{NULL}.
-#' @family Gale-force
-#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
+# @title extractData
+# @description This function doesn't do anything yet.
+# @param requested  The default value is \code{NULL}. This determines which 
+# analytic will be performed.
+# @param agency  The default value is \code{NULL}. 
+# @param dfSpp  The default value is \code{NULL}.
+# @param type  The default value is \code{NULL}.
+# @param missions  The default value is \code{NULL}.
+# @param strata  The default value is \code{NULL}.
+# @param bySex  The default value is \code{NULL}.
+# @family Gale-force
+# @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
+#' @keywords internal
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, bySex = NULL){
   getCatch<-function(agency, dfSpp, missions, strata){

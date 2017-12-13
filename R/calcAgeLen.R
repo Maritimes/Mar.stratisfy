@@ -1,22 +1,22 @@
-#' @title calcAgeLen
-#' @description This function calculates the ages and lengths.
-#' @param requested  The default value is \code{NULL}. This determines which 
-#' analytic will be performed.
-#' @param agency  The default value is \code{NULL}. 
-#' @param dfNWSets  The default value is \code{NULL}.
-#' @param dfRawDet  The default value is \code{NULL}.
-#' @param dfRawInf  The default value is \code{NULL}.
-#' @param dfStrata  The default value is \code{NULL}.
-#' @param dfSpp  The default value is \code{NULL}.
-#' @param towDist  The default value is \code{NULL}.
-#' @param bySex  The default value is \code{NULL}.
-#' @param agelen  The default value is \code{NULL}.
-#' @param lengthsTotals  The default value is \code{NULL}.
-#' @param lset  The default value is \code{NULL}.
-#' @param output  The default value is \code{NULL}.
-#' @param ageBySex  The default value is \code{NULL}.
-#' @family Gale-force
-#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
+# @title calcAgeLen
+# @description This function calculates the ages and lengths.
+# @param requested  The default value is \code{NULL}. This determines which 
+# analytic will be performed.
+# @param agency  The default value is \code{NULL}. 
+# @param dfNWSets  The default value is \code{NULL}.
+# @param dfRawDet  The default value is \code{NULL}.
+# @param dfRawInf  The default value is \code{NULL}.
+# @param dfStrata  The default value is \code{NULL}.
+# @param dfSpp  The default value is \code{NULL}.
+# @param towDist  The default value is \code{NULL}.
+# @param bySex  The default value is \code{NULL}.
+# @param agelen  The default value is \code{NULL}.
+# @param lengthsTotals  The default value is \code{NULL}.
+# @param lset  The default value is \code{NULL}.
+# @param output  The default value is \code{NULL}.
+# @param ageBySex  The default value is \code{NULL}.
+# @family Gale-force
+# @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils SQL_in
 #' @importFrom Mar.utils st_err
 #' @importFrom stats setNames
@@ -26,6 +26,7 @@
 #' @importFrom data.table .SD
 #' @importFrom data.table :=
 #' @importFrom data.table as.data.table
+#' @keywords internal
 calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL, 
                      dfRawDet=NULL, dfRawInf = NULL, dfStrata = NULL, 
                      dfSpp=NULL, towDist=NULL,  bySex = NULL,

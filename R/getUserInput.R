@@ -1,39 +1,40 @@
-#' @title getUserInput
-#' @description This function can present the user with a variety of select 
-#' boxes from which they can select appropriate options.  The select box that is
-#' shown is determined by the value of the paramter \code{"requested"}.
-#' Some of the options that are presented are dependent on the existence of 
-#' values written to the global environment by the stranal function.
-#' @param requested   The default value is \code{NULL}. This determines which 
-#' picklist will be invoked.
-#' @param agency   The default value is \code{NULL}.  Valid values are 'DFO' and
-#'  'NMFS'.
-#' @param type   The default value is \code{NULL}.  Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param strataTable   The default value is \code{NULL}.  Setting to 
-#' \code{NULL} will result in a pick list.
-#' @param year   The default value is \code{NULL}.  Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param season   The default value is \code{NULL}.  Setting to \code{NULL} 
-#' will result in a pick list.
-#' @param wingspread   The default value is \code{NULL}.  Setting to \code{NULL} 
-#' will result in a pick list.
-#' @param towDist  The default value is \code{NULL}.  Setting to \code{NULL} 
-#' will result in a pick list.
-#' @param spp   The default value is \code{NULL}.  Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param bySex   The default value is \code{NULL}.  Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param strata   The default value is \code{NULL}.  Setting to \code{NULL} 
-#' will result in a pick list.
-#' @param dfMissionsStrata   The default value is \code{NULL}.  Setting to 
-#' \code{NULL} will result in a pick list.
-#' @param ageBySex   The default value is \code{NULL}.  Setting to 
-#' \code{NULL} will result in a pick list.
-#' @family Gale-force
-#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
+# @title getUserInput
+# @description This function can present the user with a variety of select 
+# boxes from which they can select appropriate options.  The select box that is
+# shown is determined by the value of the paramter \code{"requested"}.
+# Some of the options that are presented are dependent on the existence of 
+# values written to the global environment by the stranal function.
+# @param requested   The default value is \code{NULL}. This determines which 
+# picklist will be invoked.
+# @param agency   The default value is \code{NULL}.  Valid values are 'DFO' and
+#  'NMFS'.
+# @param type   The default value is \code{NULL}.  Setting to \code{NULL} will 
+# result in a pick list.
+# @param strataTable   The default value is \code{NULL}.  Setting to 
+# \code{NULL} will result in a pick list.
+# @param year   The default value is \code{NULL}.  Setting to \code{NULL} will 
+# result in a pick list.
+# @param season   The default value is \code{NULL}.  Setting to \code{NULL} 
+# will result in a pick list.
+# @param wingspread   The default value is \code{NULL}.  Setting to \code{NULL} 
+# will result in a pick list.
+# @param towDist  The default value is \code{NULL}.  Setting to \code{NULL} 
+# will result in a pick list.
+# @param spp   The default value is \code{NULL}.  Setting to \code{NULL} will 
+# result in a pick list.
+# @param bySex   The default value is \code{NULL}.  Setting to \code{NULL} will 
+# result in a pick list.
+# @param strata   The default value is \code{NULL}.  Setting to \code{NULL} 
+# will result in a pick list.
+# @param dfMissionsStrata   The default value is \code{NULL}.  Setting to 
+# \code{NULL} will result in a pick list.
+# @param ageBySex   The default value is \code{NULL}.  Setting to 
+# \code{NULL} will result in a pick list.
+# @family Gale-force
+# @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom utils select.list
 #' @importFrom Mar.utils SQL_in
+#' @keywords internal
 getUserInput <-function(requested = NULL, agency = NULL, type = NULL, 
                         strataTable = NULL, year = NULL, season = NULL, 
                         wingspread = NULL, towDist = NULL, spp = NULL, 

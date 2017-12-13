@@ -1,16 +1,17 @@
-#' @title calcNumsWeights
-#' @description This function calculates the numbers and weights.
-#' @param requested  The default value is \code{NULL}. This determines which 
-#' analytic will be performed.
-#' @param dfRawCatch  The default value is \code{NULL}. 
-#' @param dfRawInf  The default value is \code{NULL}.
-#' @param dfNWSets  The default value is \code{NULL}.
-#' @param dfStrata  The default value is \code{NULL}.
-#' @param towDist  The default value is \code{NULL}.
-#' @param dfNWAgg  The default value is \code{NULL}.
-#' @family Gale-force
-#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
+# @title calcNumsWeights
+# @description This function calculates the numbers and weights.
+# @param requested  The default value is \code{NULL}. This determines which 
+# analytic will be performed.
+# @param dfRawCatch  The default value is \code{NULL}. 
+# @param dfRawInf  The default value is \code{NULL}.
+# @param dfNWSets  The default value is \code{NULL}.
+# @param dfStrata  The default value is \code{NULL}.
+# @param towDist  The default value is \code{NULL}.
+# @param dfNWAgg  The default value is \code{NULL}.
+# @family Gale-force
+# @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils SQL_in
+#' @keywords internal
 calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL, 
                           dfNWSets = NULL, dfStrata = NULL, towDist = NULL,
                           dfNWAgg = NULL){

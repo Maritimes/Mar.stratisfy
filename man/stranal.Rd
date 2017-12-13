@@ -80,11 +80,6 @@ analysis is not done by sex, berried females are included. Such inconsistency
 seems suboptimal, and is retained for now such that APL and R versions of the 
 application can be compared.
 }
-\seealso{
-Other Gale-force: \code{\link{calcAgeLen}},
-  \code{\link{calcNumsWeights}}, \code{\link{extractData}},
-  \code{\link{getUserInput}}
-}
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}l
 }

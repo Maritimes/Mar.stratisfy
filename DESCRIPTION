@@ -8,7 +8,7 @@ Description: This package attempts to imitate the functionality of the original 
 Imports:    
   RODBC,
   Mar.utils,
-  xlsx,
+  openxlsx,
   reshape,
   stats,
   reshape2,
