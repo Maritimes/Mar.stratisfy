@@ -1,50 +1,106 @@
 #' @title stranal
-#' @description STRANAL is a program capable of Stratified Analysis of both DFO 
-#' and NMFS survey data. STRANAL exports all results to Excel. 
+#' @description stranal is a program capable of Stratified Analyses of both DFO 
+#' and NMFS fisheries survey data. This package attempts to emulate the results
+#' of the older, APL version which has been in use for many years.
 #' 
-#' STRANAL works by opening a connection to the PTRAN database. It receives the 
-#' requested information through standard SQL queries that are generated from 
-#' user selections through the User Interface. That information is then 
-#' processed and a Stratified Analysis is created, which is exported to Excel. 
+#' Using stranal requires: 
+#' \enumerate{
+#' \item an Oracle account on the DFO PTRAN database;
+#' \item access to PTRAN (i.e. either within the network, or via a VPN) 
+#' \item appropriate select permissions on the 'groundfish' and/or 'usnefsc' 
+#' schemas
+#' }
+#' New Oracle accounts are requested by filling out a computer account request 
+#' form. These forms may be obtained from IM&TS. Select access to the DFO and 
+#' NMFS data is provided by the respective datasets manager (checking with 
+#' \email{Mike.McMahon@@dfo-mpo.gc.ca} is a good start).
 #' 
-#' STRANAL requires an Oracle account on the PTRAN database. New Oracle accounts 
-#' are requested by filling out a computer account request form. These forms may 
-#' be obtained from IM&TS. Select access to the DFO and NMFS data is provided by 
-#' the respective datasets manager.
-#' @param usepkg  The default value is \code{'roracle'}, but \code{'rodbc'} is works as well.
-#' This describes the R package you use to connect to Oracle.  
-#' @param agency  The default value is \code{DFO}, the other option is 
+#' Users can supply as much or as little information as they want when calling 
+#' stranal(). If required information is not supplied, a select box will show 
+#' the available options to the user. Please see below for examples of function 
+#' calls providing both the minimum and the maximum number of parameters.
+#' 
+#' Fun Facts About Stranal
+#' \enumerate{
+#' \item Berried Females -- APL Stranal was inconsistent with species where 
+#' females could be coded as 'berried' (i.e. 3).  When unsexed analyses were 
+#' done, the females were included, but when sexed analyses were done, these 
+#' females were not included in the results.  Such inconsistency seems 
+#' suboptimal, and is retained for now such that APL and R versions of the 
+#' application can be compared. 
+#' \item Ages By Sex -- When APL Stranal did analyses by sex, it combined the 
+#' sexes for the 'Age Mean', 'Age Total', (and standard errors of each).  This 
+#' version adds the parameter \code{ageBySex} so that by setting it to FALSE, 
+#' you can get the combined results, but you can also set it to TRUE, and get 
+#' the values for each sex individually.
+#' \item I liked the old way -- Some aspects of the 'classic' (i.e. APL) 
+#' Stranal seemed inefficient.   For example, the Strata information was broken 
+#' up over multiple worksheets, as was the weight information. By default, a new 
+#' spreadsheet has been designed, but since there will always be those who 
+#' prefer the old way, setting \code{output='classic'} will generate a 
+#' spreadsheet almost indistinguishable from the APL version.
+#' }
+#' 
+#' @param usepkg  The default value is \code{'rodbc'}, but \code{'roracle'} 
+#' works as well. This describes the R package you use to connect to Oracle.  
+#' @param agency  The default value is \code{'DFO'}, the other option is 
 #' \code{'NMFS'}.  Setting to \code{NULL} will result in a pick list.
-#' @param type The default value is \code{1}.  For agency=DFO, 5 is also 
-#' acceptable. For agency = NMFS, 136 is probable, but you can type any integer.
-#' The typed number will be embedded in \code{USNEFSC.USS_STATION.SHG <= type}.
-#' Setting to \code{NULL} will result in a pick list.
-#' @param year The default value is \code{2017}. Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param season The default value is \code{"SUMMER"}. Setting to \code{NULL} 
+#' @param type This is the 'experiment type', and the default value is \code{1}.  
+#' For \code{agency='DFO'}, \code{5} is also acceptable. For agency = NMFS, 136 
+#' is probable, but you can type any integer, and the typed number will be 
+#' embedded in\code{USNEFSC.USS_STATION.SHG <= type}. Setting to \code{NULL} 
 #' will result in a pick list.
-#' @param strataTable The default value is \code{"GROUNDFISH.GSSTRATUM"}. 
-#' Setting to \code{NULL} will result in a pick list.
-#' @param wingspread The default value is \code{41}. Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param towDist The default value is \code{1.75}. Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param strata The default value is \code{c(440:495)}. Setting to \code{NULL} 
-#' will result in a pick list.
-#' @param spp The default value is \code{2526}. Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param bySex The default value is \code{TRUE}. Setting to \code{NULL} will 
-#' result in a pick list.
-#' @param ageBySex The default value is \code{TRUE}. Note that APL Stranal 
-#' ignored sex for the results of 'age by set', 'age mean', 'age total' etc.  
-#' Setting this to FALSE will emulate the APL stranal results.
-#' @param output The default value is \code{'new'}.  This determines the format of 
-#' the output Excel file. Setting to \code{'classic'} will emulate the
+#' @param year The default value is \code{NULL}, which will result in a pick list.
+#' An example of a valid, non-empty value is \code{2017}.
+#' @param season The default value is \code{''}, which will result in a pick 
+#' list. Valid values are \code{'SUMMER', 'SPRING', 'WINTER', and 'FALL'}, 
+#' subject to the availability of data in that season for the selected agency, 
+#' year, type, etc... 
+#' @param missions The default value is \code{NULL}, which will result in a pick 
+#' list. An example valid value is \code{c('NED2016016')}.  If your choice is 
+#' not valid (given your other selections), you will be presented with a pick
+#' list of valid options. 
+#' @param strataTable  The default value is \code{'GROUNDFISH.GSSTRATUM'}.  
+#' Depending on your data, other valid values may include: 
+#' \code{'USNEFSC.DFO5ZJM','USNEFSC.DFO5ZGHNO','USNEFSC.NMFS5ZJM',
+#' 'USNEFSC.NMFS5ZGHNO','USNEFSC.NMFS5ZJMC','USNEFSC.NMFS5ZJMU',
+#' 'USNEFSC.NMFS5ZU'}.  Setting this to \code{NULL} will result in a pick list. 
+#' @param wingspread  This is the width in feet of a standard tow.  The default 
+#' value is \code{41}.  Setting this to \code{NULL} will result in a pick list. 
+#' @param towDist  This is the length (NM) of a standard tow.  The default value 
+#' is \code{1.75}.  Setting this to \code{NULL} will result in a pick list. 
+#' @param strata  These are the strata for which you want results.  The default 
+#' value is \code{c(440:495)} (DFO Summer Survey Strata).  Setting this to 
+#' \code{NULL} will result in a pick list. 
+#' @param spp  This is the species code for the species you want to analyze.  
+#' The default value is \code{''}, which will result in a pick list. An example 
+#' of a valid, non-empty value is \code{2526}. 
+#' @param bySex If the selected species was measured by sex, this parameter
+#' allows you to perform calculations by sex.  The default value is \code{''}, 
+#' which will result in a pick list. An example of a valid, non-empty value is 
+#' \code{TRUE}. 
+#' @param ageBySex The APL version of stranal ignored sex differences in some 
+#' age results (e.g. 'age by set', 'age mean', 'age total', ' etc.) despite
+#' analyses being done by sex.  The default value of this parameter is 
+#' \code{FALSE} so that the original results are emulated.  However, setting 
+#' this to \code{TRUE} (when \code{bySex=TRUE}), will show age results broken 
+#' down by sex.  Setting this to \code{''} will result in a pick list.
+#' @param output  The default value is \code{'new'}.  This determines the format 
+#' of the output Excel file. Setting this to \code{'classic'} will emulate the
 #' original APL STRANAL results, including overriding your parameter for 
 #' \code{ageBySex} and forcing it to FALSE.  If no excel output is desired, set
 #' this parameter to an empty string \code{''}
+#' @examples
+#' # Minimal - this will result in many prompts
+#' test <- stranal()
+#' 
+#' # Maximal - if the selections are all valid, this will not result in any prompts
+#' hake=stranal(year = 1990, season = 'SUMMER', bySex=TRUE, spp=14, 
+#' agency='DFO', type=1, strata=c(440:466,470:495), output = 'classic', 
+#' ageBySex = F, towDist = 1.75, strataTable = 'GROUNDFISH.GSSTRATUM', 
+#' wingspread = 41)
 #' @family Gale-force
-#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}l
+#' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect
 #' @importFrom RODBC sqlQuery
 #' @importFrom stats aggregate
@@ -60,25 +116,21 @@
 #' addressed to:
 #' Mike McMahon (Mike.McMahon@dfo-mpo.gc.ca)
 #' Fisheries and Oceans Canada
-#'
-#' @note Fun Fact!  Stranal does funny things with berried females - when 
-#' analyses are done by sex, berried females (i.e. 3), are ignored; and when 
-#' analysis is not done by sex, berried females are included. Such inconsistency 
-#' seems suboptimal, and is retained for now such that APL and R versions of the 
-#' application can be compared. 
 
-stranal<-function(usepkg = "roracle", 
-                  agency = "",
-                  type = "",
-                  year = "",
-                  season = "",
-                  strataTable = "",
-                  wingspread = "",
-                  towDist = "",
-                  strata = "",
-                  spp = "",
-                  bySex = "",
-                  ageBySex = "",
+
+stranal<-function(usepkg = 'rodbc', 
+                  agency = 'DFO',
+                  type = 1,
+                  year = NULL,
+                  season = NULL,
+                  missions = NULL,
+                  strataTable = 'GROUNDFISH.GSSTRATUM',
+                  wingspread = 41,
+                  towDist = 1.75,
+                  strata = c(440:495),
+                  spp = NULL,
+                  bySex = NULL,
+                  ageBySex = FALSE,
                   output = "new"
                   ){
   
@@ -86,7 +138,9 @@ stranal<-function(usepkg = "roracle",
   
   agency = getUserInput("agency",agency=agency)
   type = getUserInput("type", agency=agency, type=type)
-  missionsAndStrata = getUserInput("missionsAndStrata", agency=agency,type=type, year=year, season=season)
+  #NED2016016
+  missionsAndStrata = getUserInput("missionsAndStrata", agency=agency,type=type, 
+                                   year=year, season=season, missions=missions)
     dfMissions = missionsAndStrata[[1]]
     dfMissionsStrata = missionsAndStrata[[2]]
     rm(missionsAndStrata)
