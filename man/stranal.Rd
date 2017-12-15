@@ -122,16 +122,6 @@ addressed to:
 Mike McMahon (Mike.McMahon@dfo-mpo.gc.ca)
 Fisheries and Oceans Canada
 }
-\examples{
-# Minimal - this will result in many prompts
-test <- stranal()
-
-# Maximal - if the selections are all valid, this will not result in any prompts
-hake=stranal(year = 1990, season = 'SUMMER', bySex=TRUE, spp=14, 
-agency='DFO', type=1, strata=c(440:466,470:495), output = 'classic', 
-ageBySex = F, towDist = 1.75, strataTable = 'GROUNDFISH.GSSTRATUM', 
-wingspread = 41)
-}
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
 }

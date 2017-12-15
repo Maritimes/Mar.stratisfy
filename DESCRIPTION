@@ -17,7 +17,7 @@ Enhances:
     ROracle,
     DBI
 Remotes: 
-  github:Maritimes/utils
+  github:Maritimes/Mar.utils
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

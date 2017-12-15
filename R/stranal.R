@@ -90,15 +90,6 @@
 #' original APL STRANAL results, including overriding your parameter for 
 #' \code{ageBySex} and forcing it to FALSE.  If no excel output is desired, set
 #' this parameter to an empty string \code{''}
-#' @examples
-#' # Minimal - this will result in many prompts
-#' test <- stranal()
-#' 
-#' # Maximal - if the selections are all valid, this will not result in any prompts
-#' hake=stranal(year = 1990, season = 'SUMMER', bySex=TRUE, spp=14, 
-#' agency='DFO', type=1, strata=c(440:466,470:495), output = 'classic', 
-#' ageBySex = F, towDist = 1.75, strataTable = 'GROUNDFISH.GSSTRATUM', 
-#' wingspread = 41)
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect
@@ -256,9 +247,6 @@ stranal<-function(usepkg = 'rodbc',
   sheet1 <- addWorksheet(wb, sheetName = "QUERY")
   writeDataTable(wb, x=data.frame(md), rowNames = TRUE, sheet = sheet1, withFilter = FALSE)
   if (output=="classic"){
-   
-    
-  
       sheet2 <- addWorksheet(wb, sheetName = "Strata Area")
         writeDataTable(wb, x=dfStrata[,c("STRAT","TUNITS","SQNM")], rowNames = FALSE, sheet = sheet2)
       sheet3 <- addWorksheet(wb, sheetName = "Prop Area")

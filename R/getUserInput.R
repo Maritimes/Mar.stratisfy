@@ -234,8 +234,7 @@ Please make a selection from the available options, or check your parameters\n**
       missionPick=availMissions[,1]
       cat(paste0("\nDefaulting to ",missionPick," - the only  mission matching your criteria\n")) 
     }
-    
-    while(is.na(missionPick)){
+    while(any(is.na(missionPick))){
       missionPick <- select.list(availMissions[,1],preselect=availMissions[,1],
                                  multiple=T, graphics=T, 
                                  title='Mission?')
