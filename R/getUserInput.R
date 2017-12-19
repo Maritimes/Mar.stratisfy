@@ -52,6 +52,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
   
   getType<-function(agency, type){
     if (agency == "NMFS"){
+      if (type %in% c(1,5))type<-NULL
       if (!is.null(type)){
         if (is.numeric(type))return(type)
       }
