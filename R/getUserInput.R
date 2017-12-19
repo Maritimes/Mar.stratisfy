@@ -265,9 +265,9 @@ Please make a selection from the available options, or check your parameters\n**
     availWingspreadPre<-switch(agency,
                                "DFO" = c("41"),
                                "NMFS"=c("34"))
-    if (wingspread %in% availWingspread){
-      return(as.numeric(wingspread)) 
-    }else{
+    if (!is.null(wingspread)){
+     if (wingspread %in% availWingspread)return(as.numeric(wingspread)) 
+    }
       choice<-NA
       while(is.na(choice)){
         choice =  as.numeric(select.list(availWingspread,
@@ -278,10 +278,9 @@ Please make a selection from the available options, or check your parameters\n**
         return (choice)
       }
     }
-  }
   
   getTowDist<-function(towDist){
-    if (nchar(towDist)>0){
+    if (!is.null(towDist)){
       if (as.numeric(towDist)>0 & as.numeric(towDist)<100 ) return(towDist) 
     }
     towDistPick<-NA
