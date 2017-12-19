@@ -124,7 +124,7 @@ stranal<-function(usepkg = 'rodbc',
                   ageBySex = FALSE,
                   output = "new"
                   ){
-  
+  if (is.null(output))output<-""
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
   
   agency = getUserInput("agency",agency=agency)
