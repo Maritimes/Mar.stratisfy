@@ -358,15 +358,18 @@ Reverting to ageBySex=FALSE"))
       }
 
        # Age Mean ---------------------------------------------------------------  
-      age_mean<-age_by_set
-      age_mean$SETNO<-NULL
-      age_mean$MISSION<-NULL
+      age_o<-age_by_set
+      allSets<-unique(agelen[,c("MISSION", "STRAT","SETNO")])
+      age_o<-merge(age_o, allSets, all.y = T)
+      age_o[is.na(age_o)]<-0
+      age_o$SETNO<-NULL
+      age_o$MISSION<-NULL
       if (ageBySex == FALSE | output=="classic"){
-        age_mean<-aggregate(.~STRAT, data=age_mean, mean)
+        age_mean<-aggregate(.~STRAT, data=age_o, mean)
         age_mean=merge(stratID,age_mean, all.x=TRUE)
         age_mean<-age_mean[order(age_mean$STRAT),]
       }else{
-        age_mean<-aggregate(.~STRAT+FSEX, data=age_mean, mean)
+        age_mean<-aggregate(.~STRAT+FSEX, data=age_o, mean)
         #make empty dataframe
         age_mean_all<-age_mean[FALSE,]
         for (i in 1:length(theSexes)){
@@ -383,16 +386,16 @@ Reverting to ageBySex=FALSE"))
       age_mean[is.na(age_mean)]<-0
  
       # Age Mean SE ------------------------------------------------------------ 
-      age_mean_se<-age_by_set
-      age_mean_se$SETNO<-NULL
-      age_mean_se$MISSION<-NULL
+      # age_mean_se<-age_by_set
+      # age_mean_se$SETNO<-NULL
+      # age_mean_se$MISSION<-NULL
       if (ageBySex == FALSE | output=="classic"){
-        age_mean_se<-aggregate(.~STRAT, data=age_mean_se, Mar.utils::st_err)
+        age_mean_se<-aggregate(.~STRAT, data=age_o, Mar.utils::st_err)
         age_mean_se=merge(stratID,age_mean_se, all.x=TRUE)
         age_mean_se<-age_mean_se[order(age_mean_se$STRAT),]
       }else{
 
-        age_mean_se<-aggregate(.~STRAT+FSEX, data=age_mean_se, Mar.utils::st_err)
+        age_mean_se<-aggregate(.~STRAT+FSEX, data=age_o, Mar.utils::st_err)
         #make empty dataframe
         age_mean_se_all<-age_mean_se[FALSE,]
         for (i in 1:length(theSexes)){
@@ -409,7 +412,8 @@ Reverting to ageBySex=FALSE"))
       age_mean_se[is.na(age_mean_se)]<-0
      
       # Age Totals ------------------------------------------------------------- 
-      age_pretotal<-as.data.table(merge(stratID,age_by_set, by="STRAT"))
+      age_pretotal<-as.data.table(merge(stratID,age_o, by="STRAT"))
+      
       age_pretotal[, (theseages) := 
                   lapply(.SD,function(x) x * age_pretotal[['TUNITS']] ),
                     .SDcols = theseages]
