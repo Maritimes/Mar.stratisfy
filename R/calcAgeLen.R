@@ -150,7 +150,7 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     length_by_strat_se<-setNames(aggregate(list(
       MEAN_SE=length_by_set[!colnames(length_by_set) %in% imp]), 
       by=list(STRAT=length_by_set$STRAT), 
-      FUN=st_err), c("STRAT",colnames(length_by_set_dat)))
+      FUN=Mar.utils::st_err), c("STRAT",colnames(length_by_set_dat)))
     length_by_strat_se[is.na(length_by_strat_se)]<-0
     
     length_total =  merge(length_by_strat_mean, dfStrata[,c("STRAT","TUNITS")])
@@ -387,12 +387,12 @@ Reverting to ageBySex=FALSE"))
       age_mean_se$SETNO<-NULL
       age_mean_se$MISSION<-NULL
       if (ageBySex == FALSE | output=="classic"){
-        age_mean_se<-aggregate(.~STRAT, data=age_mean_se, st_err)
+        age_mean_se<-aggregate(.~STRAT, data=age_mean_se, Mar.utils::st_err)
         age_mean_se=merge(stratID,age_mean_se, all.x=TRUE)
         age_mean_se<-age_mean_se[order(age_mean_se$STRAT),]
       }else{
 
-        age_mean_se<-aggregate(.~STRAT+FSEX, data=age_mean_se, st_err)
+        age_mean_se<-aggregate(.~STRAT+FSEX, data=age_mean_se, Mar.utils::st_err)
         #make empty dataframe
         age_mean_se_all<-age_mean_se[FALSE,]
         for (i in 1:length(theSexes)){
@@ -422,7 +422,7 @@ Reverting to ageBySex=FALSE"))
         age_total=merge(stratID,age_total, all.x=TRUE)
         age_total<-age_total[order(age_total$STRAT),]
       }else{
-        age_total<-aggregate(.~STRAT+FSEX, data=age_pretotal, st_err)
+        age_total<-aggregate(.~STRAT+FSEX, data=age_pretotal, Mar.utils::st_err)
         #make empty dataframe
         age_total_all<-age_total[FALSE,]
         for (i in 1:length(theSexes)){
@@ -439,11 +439,11 @@ Reverting to ageBySex=FALSE"))
       age_total[is.na(age_total)]<-0
       
       if (ageBySex == FALSE | output=="classic"){
-        age_total_se<-aggregate(.~STRAT, data=age_pretotal, st_err)
+        age_total_se<-aggregate(.~STRAT, data=age_pretotal, Mar.utils::st_err)
         age_total_se=merge(stratID,age_total_se, all.x=TRUE)
         age_total_se<-age_total_se[order(age_total_se$STRAT),]
       }else{
-        age_total_se<-aggregate(.~STRAT+FSEX, data=age_pretotal, st_err) #make empty dataframe
+        age_total_se<-aggregate(.~STRAT+FSEX, data=age_pretotal, Mar.utils::st_err) #make empty dataframe
         age_total_se_all<-age_total_se[FALSE,]
         for (i in 1:length(theSexes)){
           this=age_total_se[age_total_se$FSEX==i,]

@@ -10,7 +10,6 @@
 # @param dfNWAgg  The default value is \code{NULL}.
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
-#' @importFrom Mar.utils SQL_in
 #' @keywords internal
 calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL, 
                           dfNWSets = NULL, dfStrata = NULL, towDist = NULL,
@@ -62,7 +61,8 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
                                   FUN=Mar.utils::st_err)
     nw<-merge(tmp.cnt,tmp.sum,by="STRAT")
     nw<-merge(nw, tmp.mean,by="STRAT")
-    nw<-Mar.utils::na_zero(merge(nw, tmp.sterr,by="STRAT"))
+    nw<-merge(nw, tmp.sterr,by="STRAT")
+    nw[is.na(nw)]<-0
     return(nw)
     }
   calcStrataProp<-function(dfNWSets,dfStrata,dfNWAgg){
@@ -96,7 +96,8 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
       str_stratAreaDet<-merge(str_stratAreaDet,tmp.LoneStrat,by="STRAT",all.x=T)
       str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaPropStErr,by="STRAT",all.x=T)
       str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTot,by="STRAT",all.x=T)
-      str_stratAreaDet<-Mar.utils::na_zero(merge(str_stratAreaDet,tmp.AreaTotStErr,by="STRAT",all.x=T))
+      str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTotStErr,by="STRAT",all.x=T)
+      str_stratAreaDet[is.na(str_stratAreaDet)]<-0
       str_stratAreaDet <- str_stratAreaDet[c('STRAT',setdiff(colnames(str_stratAreaDet), colnames(dfStrata)))]
       if(nrow(str_stratAreaDet[str_stratAreaDet$AREACNT==1,])>0){
         #If there's a single record within a strata APL doesn't give 0 as the STERRs
