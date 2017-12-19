@@ -124,7 +124,7 @@ stranal<-function(usepkg = 'rodbc',
                   ageBySex = FALSE,
                   output = "new"
                   ){
-  if (is.null(output))output<-""
+  if (is.null(output))output<-NA
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
   
   agency = getUserInput("agency",agency=agency)
@@ -246,7 +246,7 @@ stranal<-function(usepkg = 'rodbc',
   wb<-createWorkbook(creator = paste0("Mar.stranal v.",metadata$Mar.stranal))
   sheet1 <- addWorksheet(wb, sheetName = "QUERY")
   writeDataTable(wb, x=data.frame(md), rowNames = TRUE, sheet = sheet1, withFilter = FALSE)
-  if (!is.null(output)){
+  if (!is.na(output)){
   if (output=="classic"){
       sheet2 <- addWorksheet(wb, sheetName = "Strata Area")
         writeDataTable(wb, x=dfStrata[,c("STRAT","TUNITS","SQNM")], rowNames = FALSE, sheet = sheet2)
