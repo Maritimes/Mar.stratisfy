@@ -109,7 +109,7 @@ Please enter the survey type:"))
       season <- toupper(season)
       if (season %in% availSeasons) seasonpick = season
     }else{
-      #they asked for an invalid season - repalce it with NA
+      #they asked for an invalid season - replace it with NA
       seasonpick<-NA
     }
     
@@ -156,6 +156,7 @@ Please enter the survey type:"))
                           M.SEASON = '",seasonpick, "'")
       
     }
+    
     cat("\n Checking years matching your criteria...\n")
     availYears = oracle_cxn$thecmd(oracle_cxn$channel, year.query)
     availYears = as.character(availYears[order(availYears$YEAR),1])
@@ -215,7 +216,7 @@ Please enter the survey type:"))
                              S.CRUISE6 = M.CRUISE6 AND
                              S.SHG <= ",type," AND 
                              M.SEASON = '",seasonpick, "' AND 
-                             YEAR = '",yearpick, "'
+                             YEAR = ",yearpick, "
                              ORDER BY S.CRUISE6")
     }
     cat("\n Looking for Missions meeting your criteria...\n")
@@ -490,7 +491,7 @@ sex option.  Please select one from the list.\n")
     
     strataPick<-NA
     if (!is.null(strata)) strataPick <-strata
-    if (all(nchar(dfMissionsStrata[,1])==5)){
+    if (all(nchar(dfMissionsStrata[,1])>3)){
       strata.tweak = "AND LENGTH(STRAT)=5"
       strata.preselect=""
     }else if (all(nchar(dfMissionsStrata[,1])==3)){
