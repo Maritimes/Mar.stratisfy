@@ -246,6 +246,7 @@ stranal<-function(usepkg = 'rodbc',
   wb<-createWorkbook(creator = paste0("Mar.stranal v.",metadata$Mar.stranal))
   sheet1 <- addWorksheet(wb, sheetName = "QUERY")
   writeDataTable(wb, x=data.frame(md), rowNames = TRUE, sheet = sheet1, withFilter = FALSE)
+  if (!is.null(output)){
   if (output=="classic"){
       sheet2 <- addWorksheet(wb, sheetName = "Strata Area")
         writeDataTable(wb, x=dfStrata[,c("STRAT","TUNITS","SQNM")], rowNames = FALSE, sheet = sheet2)
@@ -331,7 +332,7 @@ stranal<-function(usepkg = 'rodbc',
     sheet11 <- addWorksheet(wb, sheetName = "Length Total Standard Error")
     writeDataTable(wb, x=length_total_se, rowNames = FALSE, sheet = sheet11)
   }
-  
+  }
   saveWorkbook(wb, file = wbName, overwrite=TRUE)
   cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
   return(res)
