@@ -42,6 +42,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
                         ageBySex = NULL, missions = NULL){
   getAgency<-function(agency){
     if (!is.null(agency)){
+      agency<-toupper(agency)
       if(agency %in% c("DFO","NMFS"))return(agency)
     }
     
