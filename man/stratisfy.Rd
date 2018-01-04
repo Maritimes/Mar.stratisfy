@@ -8,7 +8,7 @@ stratisfy(usepkg = "rodbc", agency = "DFO", type = 1, year = NULL,
   season = NULL, missions = NULL, strataTable = "GROUNDFISH.GSSTRATUM",
   wingspread = 41, towDist = 1.75, strata = c(440:495), spp = NULL,
   bySex = NULL, ageBySex = FALSE, output = "new", useAlkTable = FALSE,
-  alkTable = NULL)
+  alkTable = NULL, file_id = NULL)
 }
 \arguments{
 \item{usepkg}{The default value is \code{'rodbc'}, but \code{'roracle'} 
@@ -76,6 +76,9 @@ this parameter to an empty string \code{''}}
 
 \item{alkTable}{The default is \code{NULL}.  Setting this to a valid path
 allows you to add additional values for the age length key.}
+
+\item{file_id}{This is a modifier you can have appended to the output 
+filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx}}
 }
 \description{
 stratisfy is a program capable of Stratified Analyses of both DFO 

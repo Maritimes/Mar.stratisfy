@@ -92,6 +92,8 @@
 #' this parameter to an empty string \code{''}
 #' @param alkTable The default is \code{NULL}.  Setting this to a valid path
 #' allows you to add additional values for the age length key.
+#' @param file_id This is a modifier you can have appended to the output 
+#' filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx}
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect
@@ -126,9 +128,11 @@ stratisfy<-function(usepkg = 'rodbc',
                   ageBySex = FALSE,
                   output = "new",
                   useAlkTable = FALSE,
-                  alkTable = NULL
+                  alkTable = NULL,
+                  file_id = NULL
                   ){
   if (is.null(output))output<-NA
+  
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
   
   agency = getUserInput("agency",agency=agency)
@@ -160,8 +164,11 @@ stratisfy<-function(usepkg = 'rodbc',
   dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, type=type)
   dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, dfSpp = dfSpp, bySex = bySex, type=type)
   
-  if (useAlkTable)  alkTable <-getAlkTable(alkTable)
-  browser()
+  if (useAlkTable)  {
+    alkTable <-getAlkTable(alkTable)
+    cat("alk table captured, but not applied")
+  }
+  # browser()
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
   
@@ -247,7 +254,10 @@ stratisfy<-function(usepkg = 'rodbc',
   )
 
   if (!is.na(output)){
-    wbName = "Mar_stratisfy.xlsx"
+    file_id = ifelse(!is.null(file_id),paste0("_",file_id),"")
+    wbName = paste0('Mar_stratisfy',file_id, ".xlsx")
+    
+    # wbName = "Mar_stratisfy.xlsx"
     md = data.frame(unlist(metadata))
     colnames(md)<-"Value"
     wb<-createWorkbook(creator = paste0("Mar.stratisfy v.",metadata$Mar.stratisfy))
