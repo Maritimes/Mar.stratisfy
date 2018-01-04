@@ -93,7 +93,7 @@
 #' @param alkTable The default is \code{NULL}.  Setting this to a valid path
 #' allows you to add additional values for the age length key.
 #' @param file_id This is a modifier you can have appended to the output 
-#' filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx}
+#' filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect

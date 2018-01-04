@@ -78,7 +78,7 @@ this parameter to an empty string \code{''}}
 allows you to add additional values for the age length key.}
 
 \item{file_id}{This is a modifier you can have appended to the output 
-filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx}}
+filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}}
 }
 \description{
 stratisfy is a program capable of Stratified Analyses of both DFO 
