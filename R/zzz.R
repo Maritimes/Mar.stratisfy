@@ -1,5 +1,5 @@
 .onAttach <- function(libname, pkgname) {
-  packageStartupMessage(paste0("Version: ", utils::packageDescription('Mar.stranal')$Version))
+  packageStartupMessage(paste0("Version: ", utils::packageDescription('Mar.stratisfy')$Version))
 }
 .onLoad <- function(libname, pkgname){
   options(stringsAsFactors = FALSE)

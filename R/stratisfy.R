@@ -1,9 +1,9 @@
-#' @title stranal
-#' @description stranal is a program capable of Stratified Analyses of both DFO 
+#' @title stratisfy
+#' @description stratisfy is a program capable of Stratified Analyses of both DFO 
 #' and NMFS fisheries survey data. This package attempts to emulate the results
 #' of the older, APL version which has been in use for many years.
 #' 
-#' Using stranal requires: 
+#' Using stratisfy requires: 
 #' \enumerate{
 #' \item an Oracle account on the DFO PTRAN database;
 #' \item access to PTRAN (i.e. either within the network, or via a VPN) 
@@ -16,25 +16,25 @@
 #' \email{Mike.McMahon@@dfo-mpo.gc.ca} is a good start).
 #' 
 #' Users can supply as much or as little information as they want when calling 
-#' stranal(). If required information is not supplied, a select box will show 
+#' stratisfy(). If required information is not supplied, a select box will show 
 #' the available options to the user. Please see below for examples of function 
 #' calls providing both the minimum and the maximum number of parameters.
 #' 
-#' Fun Facts About Stranal
+#' Fun Facts About stratisfy
 #' \enumerate{
-#' \item Berried Females -- APL Stranal was inconsistent with species where 
+#' \item Berried Females -- APL stratisfy was inconsistent with species where 
 #' females could be coded as 'berried' (i.e. 3).  When unsexed analyses were 
 #' done, the females were included, but when sexed analyses were done, these 
 #' females were not included in the results.  Such inconsistency seems 
 #' suboptimal, and is retained for now such that APL and R versions of the 
 #' application can be compared. 
-#' \item Ages By Sex -- When APL Stranal did analyses by sex, it combined the 
+#' \item Ages By Sex -- When APL stratisfy did analyses by sex, it combined the 
 #' sexes for the 'Age Mean', 'Age Total', (and standard errors of each).  This 
 #' version adds the parameter \code{ageBySex} so that by setting it to FALSE, 
 #' you can get the combined results, but you can also set it to TRUE, and get 
 #' the values for each sex individually.
 #' \item I liked the old way -- Some aspects of the 'classic' (i.e. APL) 
-#' Stranal seemed inefficient.   For example, the Strata information was broken 
+#' stratisfy seemed inefficient.   For example, the Strata information was broken 
 #' up over multiple worksheets, as was the weight information. By default, a new 
 #' spreadsheet has been designed, but since there will always be those who 
 #' prefer the old way, setting \code{output='classic'} will generate a 
@@ -79,7 +79,7 @@
 #' allows you to perform calculations by sex.  The default value is \code{''}, 
 #' which will result in a pick list. An example of a valid, non-empty value is 
 #' \code{TRUE}. 
-#' @param ageBySex The APL version of stranal ignored sex differences in some 
+#' @param ageBySex The APL version of stratisfy ignored sex differences in some 
 #' age results (e.g. 'age by set', 'age mean', 'age total', ' etc.) despite
 #' analyses being done by sex.  The default value of this parameter is 
 #' \code{FALSE} so that the original results are emulated.  However, setting 
@@ -87,9 +87,11 @@
 #' down by sex.  Setting this to \code{''} will result in a pick list.
 #' @param output  The default value is \code{'new'}.  This determines the format 
 #' of the output Excel file. Setting this to \code{'classic'} will emulate the
-#' original APL STRANAL results, including overriding your parameter for 
+#' original APL stratisfy results, including overriding your parameter for 
 #' \code{ageBySex} and forcing it to FALSE.  If no excel output is desired, set
 #' this parameter to an empty string \code{''}
+#' @param alkTable The default is \code{NULL}.  Setting this to a valid path
+#' allows you to add additional values for the age length key.
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom RODBC odbcConnect
@@ -109,7 +111,7 @@
 #' Fisheries and Oceans Canada
 
 
-stranal<-function(usepkg = 'rodbc', 
+stratisfy<-function(usepkg = 'rodbc', 
                   agency = 'DFO',
                   type = 1,
                   year = NULL,
@@ -122,7 +124,9 @@ stranal<-function(usepkg = 'rodbc',
                   spp = NULL,
                   bySex = NULL,
                   ageBySex = FALSE,
-                  output = "new"
+                  output = "new",
+                  useAlkTable = FALSE,
+                  alkTable = NULL
                   ){
   if (is.null(output))output<-NA
   assign("oracle_cxn", Mar.utils::make_oracle_cxn(usepkg), envir = .GlobalEnv )
@@ -156,7 +160,8 @@ stranal<-function(usepkg = 'rodbc',
   dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, type=type)
   dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, dfSpp = dfSpp, bySex = bySex, type=type)
   
-
+  if (useAlkTable)  alkTable <-getAlkTable(alkTable)
+  browser()
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
   
@@ -179,7 +184,7 @@ stranal<-function(usepkg = 'rodbc',
   lengthsData$agelen<-NULL
   lengthsData$lset<-NULL
   metadata=list(
-                "Mar.stranal" = utils::packageDescription('Mar.stranal')$Version,
+                "Mar.stratisfy" = utils::packageDescription('Mar.stratisfy')$Version,
                 "Date" = as.character(Sys.time()),
                 "Data Source" = agency,
                 "Missions" = paste("'", paste(dfMissions, collapse="','"),"'", sep=""),
@@ -242,10 +247,10 @@ stranal<-function(usepkg = 'rodbc',
   )
 
   if (!is.na(output)){
-    wbName = "Mar_stranal.xlsx"
+    wbName = "Mar_stratisfy.xlsx"
     md = data.frame(unlist(metadata))
     colnames(md)<-"Value"
-    wb<-createWorkbook(creator = paste0("Mar.stranal v.",metadata$Mar.stranal))
+    wb<-createWorkbook(creator = paste0("Mar.stratisfy v.",metadata$Mar.stratisfy))
     sheet1 <- addWorksheet(wb, sheetName = "QUERY")
     writeDataTable(wb, x=data.frame(md), rowNames = TRUE, sheet = sheet1, withFilter = FALSE)
     

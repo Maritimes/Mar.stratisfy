@@ -79,7 +79,7 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
    getDet<-function(agency, missions, strata, dfSpp, bySex, type){
      spp=dfSpp$SPEC
      sppLgrp = dfSpp$LGRP
-     #orig stranal is inconsistent with berried females:
+     #orig stratisfy is inconsistent with berried females:
      # -if analysis is done by sex, berried females (fsex = 3) are ignored
      # -if analysis is done not by sex, they are included
      # The following block does this so that the results match, but it seems 

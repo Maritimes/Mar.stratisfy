@@ -3,7 +3,7 @@
 # boxes from which they can select appropriate options.  The select box that is
 # shown is determined by the value of the paramter \code{"requested"}.
 # Some of the options that are presented are dependent on the existence of 
-# values written to the global environment by the stranal function.
+# values written to the global environment by the stratisfy function.
 # @param requested   The default value is \code{NULL}. This determines which 
 # picklist will be invoked.
 # @param agency   The default value is \code{NULL}.  Valid values are 'DFO' and

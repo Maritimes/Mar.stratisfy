@@ -1,6 +1,6 @@
-Package: Mar.stranal
+Package: Mar.stratisfy
 Type: Package
-Title: STRANAL functionality in R
+Title: Stratisfy: STRANAL functionality in R
 Version: 2017.12.19
 Authors@R: c( person("Mike", "McMahon", email="Mike.McMahon@dfo-mpo.gc.ca", role=c("aut", "cre")) )
 Maintainer: Mike McMahon <Mike.McMahon@dfo-mpo.gc.ca>
