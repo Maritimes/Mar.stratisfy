@@ -26,32 +26,35 @@
 # result in a pick list.
 # @param strata   The default value is \code{NULL}.  Setting to \code{NULL} 
 # will result in a pick list.
+# @param areas   The default value is \code{NULL}.  Setting to \code{NULL} 
+# will result in a pick list.
 # @param dfMissionsStrata   The default value is \code{NULL}.  Setting to 
 # \code{NULL} will result in a pick list.
 # @param ageBySex   The default value is \code{NULL}.  Setting to 
 # \code{NULL} will result in a pick list.
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
-#' @importFrom utils select.list
-#' @importFrom Mar.utils SQL_in
-#' @keywords internal
+# @importFrom utils select.list
+# @importFrom Mar.utils SQL_in
+# @keywords internal
 getUserInput <-function(requested = NULL, agency = NULL, type = NULL, 
                         strataTable = NULL, year = NULL, season = NULL, 
                         wingspread = NULL, towDist = NULL, spp = NULL, 
-                        bySex = NULL, strata = NULL, dfMissionsStrata = NULL,
-                        ageBySex = NULL, missions = NULL){
+                        bySex = NULL, strata = NULL, areas = NULL, 
+                        dfMissionsStrata = NULL, ageBySex = NULL, 
+                        missions = NULL, oracle_cxn =NULL){
   getAgency<-function(agency){
     if (!is.null(agency)){
       agency<-toupper(agency)
       if(agency %in% c("DFO","NMFS"))return(agency)
     }
     
-    choice<-select.list(c("DFO","NMFS"), multiple=F, graphics=T, title='Please choose an agency:')
+    choice<-utils::select.list(c("DFO","NMFS"), multiple=F, graphics=T, title='Please choose an agency:')
     if ((choice=="" || is.na(choice)))stop("\n\nNo selection made - Aborting.")
     return(choice)
   }
   
-  getType<-function(agency, type){
+  getType<-function(agency, type, oracle_cxn){
     if (agency == "NMFS"){
       if (type %in% c(1,5))type<-NULL
       if (!is.null(type)){
@@ -59,10 +62,10 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
       }
       typePick<-NA
       while(is.na(typePick)){
-        typePick = select.list(c("136","other"),
-                               preselect=c("136"),
-                               multiple=F, graphics=T, 
-                               title='Set Type')
+        typePick = utils::select.list(c("136","other"),
+                                      preselect=c("136"),
+                                      multiple=F, graphics=T, 
+                                      title='Set Type')
         if (is.na(typePick)) print("You must select one of provided options")
       }
       if (typePick == "other") {
@@ -89,9 +92,9 @@ Please enter the survey type:"))
                                              ORDER BY XTYPE",sep=""))
         choice<-paste( choice[,1], " (", choice[,2],")",sep="")
         
-        typePick<-select.list(choice,
-                              multiple=F, graphics=T,
-                              title='Please select the type of trawl:')
+        typePick<-utils::select.list(choice,
+                                     multiple=F, graphics=T,
+                                     title='Please select the type of trawl:')
         typePick<-as.numeric(gsub('.+\\(([0-9]+)\\).*?$', '\\1', typePick) )
         if (is.na(typePick)) print("You must select a survey type")
       }
@@ -99,7 +102,7 @@ Please enter the survey type:"))
     }
   }
   
-  getMissionsAndStrata<-function(agency, type, year, season, missions){
+  getMissionsAndStrata<-function(agency, type, year, season, missions, oracle_cxn){
     
     availSeasons = switch(agency,
                           "DFO" = c("SPRING","SUMMER", "FALL"),
@@ -114,9 +117,9 @@ Please enter the survey type:"))
     }
     
     while(is.na(seasonpick)){
-      seasonpick <- select.list(availSeasons,
-                                multiple=F, graphics=T, 
-                                title='Season?')
+      seasonpick <- utils::select.list(availSeasons,
+                                       multiple=F, graphics=T, 
+                                       title='Season?')
       if (!seasonpick %in% availSeasons) print("You must select a season")
     }
     
@@ -174,9 +177,9 @@ Please enter the survey type:"))
     }
     
     while(is.na(yearpick)){
-      yearpick <- select.list(availYears,
-                              multiple=F, graphics=T, 
-                              title='Year?')
+      yearpick <- utils::select.list(availYears,
+                                     multiple=F, graphics=T, 
+                                     title='Year?')
       if (!yearpick %in% availYears) print("You must select a year")
     }
     
@@ -238,9 +241,9 @@ Please make a selection from the available options, or check your parameters\n**
       cat(paste0("\nDefaulting to ",missionPick," - the only  mission matching your criteria\n")) 
     }
     while(any(is.na(missionPick))){
-      missionPick <- select.list(availMissions[,1],preselect=availMissions[,1],
-                                 multiple=T, graphics=T, 
-                                 title='Mission?')
+      missionPick <- utils::select.list(availMissions[,1],preselect=availMissions[,1],
+                                        multiple=T, graphics=T, 
+                                        title='Mission?')
       if (length(missionPick)==0) {
         cat("You must select a mission")
         missionPick<-NA
@@ -254,6 +257,15 @@ Please make a selection from the available options, or check your parameters\n**
       sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRATUM")
     }
     availStrata = oracle_cxn$thecmd(oracle_cxn$channel,  sql1)
+    # browser()
+    # #2) AREAS
+    # f (agency == "DFO"){
+    #   sql2 = paste0("SELECT DISTINCT AREA FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
+    # } else if (agency == "NMFS"){
+    #   sql2 = paste0("SELECT DISTINCT AREA FROM USNEFSC.USS_STATION WHERE CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
+    # }
+    # availArea = oracle_cxn$thecmd(oracle_cxn$channel,  sql2)
+    
     res = list(missionPick, availStrata)
     return(res)
   }
@@ -266,18 +278,18 @@ Please make a selection from the available options, or check your parameters\n**
                                "DFO" = c("41"),
                                "NMFS"=c("34"))
     if (!is.null(wingspread)){
-     if (wingspread %in% availWingspread)return(as.numeric(wingspread)) 
+      if (wingspread %in% availWingspread)return(as.numeric(wingspread)) 
     }
-      choice<-NA
-      while(is.na(choice)){
-        choice =  as.numeric(select.list(availWingspread,
-                                         preselect=availWingspreadPre,
-                                         multiple=F, graphics=T, 
-                                         title='Select the Wingspread (ft)'))
-        if (is.na(choice)) print("You must select a wingspread")
-        return (choice)
-      }
+    choice<-NA
+    while(is.na(choice)){
+      choice =  as.numeric(utils::select.list(availWingspread,
+                                              preselect=availWingspreadPre,
+                                              multiple=F, graphics=T, 
+                                              title='Select the Wingspread (ft)'))
+      if (is.na(choice)) print("You must select a wingspread")
+      return (choice)
     }
+  }
   
   getTowDist<-function(towDist){
     if (!is.null(towDist)){
@@ -285,10 +297,10 @@ Please make a selection from the available options, or check your parameters\n**
     }
     towDistPick<-NA
     while(is.na(towDistPick)){
-      towDistPick = select.list(c("1.75","other"),
-                                preselect=c("1.75"),
-                                multiple=F, graphics=T, 
-                                title='Tow Distance (NM)')
+      towDistPick = utils::select.list(c("1.75","other"),
+                                       preselect=c("1.75"),
+                                       multiple=F, graphics=T, 
+                                       title='Tow Distance (NM)')
       if (is.na(towDistPick)) print("You must select one of provided options")
     }
     if (towDistPick == "other") {
@@ -300,7 +312,7 @@ Please make a selection from the available options, or check your parameters\n**
     return(towDistPick)
   }
   
-  getStrataTable<-function(strataTable, dfMissionsStrata){
+  getStrataTable<-function(strataTable, dfMissionsStrata,oracle_cxn){
     quickStrataTables<- c("GROUNDFISH.GSSTRATUM","USNEFSC.DFO5ZJM",
                           "USNEFSC.DFO5ZGHNO","USNEFSC.NMFS5ZJM",
                           "USNEFSC.NMFS5ZGHNO","USNEFSC.NMFS5ZJMC",
@@ -343,15 +355,15 @@ Please make a selection from the available options, or check your parameters\n**
       while(is.na(strataTablePick)){
         if (!strataTablePick %in% availStrataTables) cat("\nYou must select a strata table (the number in brackets shows how many of your strata are present in the table)\n")
         
-        strataTablePick <- select.list(paste0(availStrataTables[,1]," (",availStrataTables[,2],")"),multiple=F, graphics=T, 
-                                       title='Strata Table?')
+        strataTablePick <- utils::select.list(paste0(availStrataTables[,1]," (",availStrataTables[,2],")"),multiple=F, graphics=T, 
+                                              title='Strata Table?')
         strataTablePick = gsub( " *\\(\\d{1,3}\\) *", "", strataTablePick)
       }
     }
     return(strataTablePick)
   }
   
-  getSpp<-function(agency, spp, bySex, ageBySex){
+  getSpp<-function(agency, spp, bySex, ageBySex, oracle_cxn){
     bySexChoice<-NA
     ageBySexChoice<-NA
     sppChoice<-NA
@@ -370,9 +382,9 @@ Please make a selection from the available options, or check your parameters\n**
       
       #helper functions
       getBySex<-function(bySexChoice, ageBySexChoice){
-        bySexChoice <- select.list(c("Unsexed Analysis","Sexed Analysis"),
-                                   multiple=F, graphics=T,
-                                   title='Analysis by Sex?')
+        bySexChoice <- utils::select.list(c("Unsexed Analysis","Sexed Analysis"),
+                                          multiple=F, graphics=T,
+                                          title='Analysis by Sex?')
         bySexChoice = switch(bySexChoice, "Sexed Analysis" = TRUE,
                              "Unsexed Analysis" = FALSE)
         res=c(bySexChoice, ageBySexChoice)
@@ -380,10 +392,10 @@ Please make a selection from the available options, or check your parameters\n**
       }
       
       getAgeBySex<-function(bySexChoice, ageBySexChoice){  
-        ageBySexChoice = select.list(c("Show Age Results By Sex",
-                                       "Combine Sexes in Age Results (classic)"),
-                                     multiple=F, graphics=T,
-                                     title="How to Handle Sex In Age Results?")
+        ageBySexChoice = utils::select.list(c("Show Age Results By Sex",
+                                              "Combine Sexes in Age Results (classic)"),
+                                            multiple=F, graphics=T,
+                                            title="How to Handle Sex In Age Results?")
         ageBySexChoice <- switch(ageBySexChoice,
                                  "Show Age Results By Sex" = TRUE,
                                  "Combine Sexes in Age Results (classic)" = FALSE)
@@ -472,11 +484,11 @@ sex option.  Please select one from the list.\n")
     } 
     
     while (is.na(sppChoice)){
-      sppChoice = select.list(paste( availSpp$CNAME, " (", availSpp$SPEC,")",sep=""),
-                              multiple=F, graphics=T, 
-                              title=ifelse(isTRUE(bySexChoice),
-                                           "Choose a (sexed) species:",
-                                           "Choose a species"))
+      sppChoice = utils::select.list(paste( availSpp$CNAME, " (", availSpp$SPEC,")",sep=""),
+                                     multiple=F, graphics=T, 
+                                     title=ifelse(isTRUE(bySexChoice),
+                                                  "Choose a (sexed) species:",
+                                                  "Choose a species"))
       #got species selection - extract code
       sppChoice<-as.numeric(gsub('.+\\(([0-9]+)\\).*?$', '\\1', sppChoice)) 
       
@@ -486,8 +498,7 @@ sex option.  Please select one from the list.\n")
     return(res)
   }
   
-  getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata){
-    
+  getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata, oracle_cxn){
     strataPick<-NA
     if (!is.null(strata)) strataPick <-strata
     if (all(nchar(dfMissionsStrata[,1])>3)){
@@ -502,9 +513,9 @@ sex option.  Please select one from the list.\n")
     sql = paste0("SELECT * FROM ",strataTable, " WHERE 1=1 ", strata.tweak, " ORDER BY STRAT")
     availStrat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
     while(all(!strataPick %in% availStrat$STRAT)){
-      strataPick <- select.list(availStrat$STRAT,
-                                multiple=T, graphics=T, preselect = strata.preselect,
-                                title='Please choose the strata:')
+      strataPick <- utils::select.list(availStrat$STRAT,
+                                       multiple=T, graphics=T, preselect = strata.preselect,
+                                       title='Please choose the strata:')
       if (all(!strataPick %in% availStrat$STRAT)) print("You must select the strata")
     }
     
@@ -522,14 +533,48 @@ sex option.  Please select one from the list.\n")
     dfStrata.det<-dfStrata.det[order(dfStrata.det$STRAT),] 
     return(dfStrata.det)
   }
-  
+  getAreas<-function(agency, missions, strata, areas, oracle_cxn){
+    areasPick<-NA
+    if (agency =="DFO"){
+      sql <- paste0(
+        "SELECT DISTINCT AREA FROM GROUNDFISH.GSINF
+        WHERE
+        STRAT IN (",Mar.utils::SQL_in(strata[,1]),") AND
+        MISSION IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
+        ORDER BY AREA"
+      )
+      
+    } else if (agency=="NMFS") {
+      #do this
+    }
+    
+    availAreas<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
+    
+    if (is.null(areas)){
+      while(all(!areasPick %in% availAreas$AREA)){
+        areasPick <- utils::select.list(availAreas$AREA,
+                                        multiple=T, graphics=T, preselect = availAreas$AREA,
+                                        title='Please choose the areas:')
+        if (all(!areasPick %in% availAreas$AREA)) print("You must select the areas")
+      }
+    } else if ("all" %in% areas){
+      areasPick<-availAreas$AREA
+    } else {
+      print("Using submitted areas")
+      areasPick <-areas
+    }
+    return(areasPick)
+  }
   switch(requested, 
          "agency" = getAgency(agency), 
-         "type" = getType(agency, type),
-         "spp" = getSpp(agency, spp, bySex, ageBySex),
-         "missionsAndStrata" = getMissionsAndStrata(agency, type, year, season, missions),
-         "strataTable" = getStrataTable(strataTable, dfMissionsStrata),
-         "strata" = getStrata(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata),
+         "type" = getType(agency, type, oracle_cxn),
+         "spp" = getSpp(agency, spp, bySex, ageBySex, oracle_cxn),
+         "missionsAndStrata" = getMissionsAndStrata(agency, type, year, season, 
+                                                    missions, oracle_cxn),
+         "strataTable" = getStrataTable(strataTable, dfMissionsStrata, oracle_cxn),
+         "strata" = getStrata(agency, strataTable, strata, towDist, wingspread, 
+                              dfMissionsStrata, oracle_cxn),
+         "areas" = getAreas(agency, missions, strata, areas, oracle_cxn),
          "wingspread" = getWingspread(agency,wingspread),
          "towDist" = getTowDist(towDist)
   )

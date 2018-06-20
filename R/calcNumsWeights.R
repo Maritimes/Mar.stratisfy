@@ -32,85 +32,85 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
     names(str_dfNWSets)[names(str_dfNWSets) == "AREA"] <- "UNIT_AREA"
     return(str_dfNWSets)
   }
-
+  
   calcNWAgg<-function(dfNWSets, dfStrata){
     tmp <- merge(dfNWSets,dfStrata, by = 'STRAT')
     tmp$BIOMASS<-tmp$TOTWGT*tmp$TUNITS
     tmp$ABUND<-tmp$TOTNO*tmp$TUNITS
-    tmp.cnt<-aggregate(list(COUNT=tmp$STRAT),
+    tmp.cnt<-stats::aggregate(list(COUNT=tmp$STRAT),
+                              by=list(STRAT=tmp$STRAT),
+                              FUN=length)
+    
+    tmp.sum<-stats::aggregate(list(TOT_WGT=tmp$TOTWGT,
+                                   TOT_NO=tmp$TOTNO),
+                              by=list(STRAT=tmp$STRAT),
+                              FUN=sum)
+    
+    tmp.mean<-stats::aggregate(list(MEAN_WGT=tmp$TOTWGT,
+                                    MEAN_NO=tmp$TOTNO,
+                                    BIOMASS=tmp$BIOMASS,
+                                    ABUND=tmp$ABUND),
+                               by=list(STRAT=tmp$STRAT),
+                               FUN=mean)
+    
+    tmp.sterr<-stats::aggregate(list(ST_ERR_WGT=tmp$TOTWGT,
+                                     ST_ERR_NO=tmp$TOTNO,
+                                     ST_ERR_BIOMASS=tmp$BIOMASS,
+                                     ST_ERR_ABUND=tmp$ABUND),
                                 by=list(STRAT=tmp$STRAT),
-                                FUN=length)
-
-    tmp.sum<-aggregate(list(TOT_WGT=tmp$TOTWGT,
-                                     TOT_NO=tmp$TOTNO),
-                                by=list(STRAT=tmp$STRAT),
-                                FUN=sum)
-
-    tmp.mean<-aggregate(list(MEAN_WGT=tmp$TOTWGT,
-                                      MEAN_NO=tmp$TOTNO,
-                                      BIOMASS=tmp$BIOMASS,
-                                      ABUND=tmp$ABUND),
-                                 by=list(STRAT=tmp$STRAT),
-                                 FUN=mean)
-
-    tmp.sterr<-aggregate(list(ST_ERR_WGT=tmp$TOTWGT,
-                                       ST_ERR_NO=tmp$TOTNO,
-                                       ST_ERR_BIOMASS=tmp$BIOMASS,
-                                       ST_ERR_ABUND=tmp$ABUND),
-                                  by=list(STRAT=tmp$STRAT),
-                                  FUN=Mar.utils::st_err)
+                                FUN=Mar.utils::st_err)
     nw<-merge(tmp.cnt,tmp.sum,by="STRAT")
     nw<-merge(nw, tmp.mean,by="STRAT")
     nw<-merge(nw, tmp.sterr,by="STRAT")
     nw[is.na(nw)]<-0
     return(nw)
-    }
+  }
   calcStrataProp<-function(dfNWSets,dfStrata,dfNWAgg){
-      tmp = dfNWSets[c("STRAT","TOTWGT","TOTNO")]
-      #seems correct, but APL STRANAL only considers TOTWGT
-      #tmp$SOMECATCH[tmp$TOTWGT!=0 | tmp$TOTNO!=0]<-1
-      tmp$SOMECATCH[tmp$TOTWGT!=0]<-1
-      
-      tmp$SOMECATCH[is.na(tmp$SOMECATCH)]<-0
-      tmp<-merge(dfStrata,tmp,by="STRAT",all.y=T)
-      
-      tmp<-merge(tmp,dfNWAgg[c("STRAT","COUNT")],by="STRAT",all.x=T)
-      tmp$AREA_CALC<-tmp$SQNM*tmp$SOMECATCH
-      
-      tmp.AreaProp<-aggregate(list(AREAPROP=tmp$SOMECATCH), 
-                                               by=list(STRAT=tmp$STRAT), 
-                                               FUN=mean)
-      tmp.LoneStrat<-aggregate(list(AREACNT=tmp$SOMECATCH), 
-                               by=list(STRAT=tmp$STRAT), 
-                               FUN=length)
-      tmp.AreaPropStErr<-aggregate(list(AREAPROPSTERR=tmp$SOMECATCH),
-                                         by=list(STRAT=tmp$STRAT),
-                                         FUN=Mar.utils::st_err)
-      tmp.AreaTot<-aggregate(list(AREATOT=tmp$AREA_CALC),
-                                   by=list(STRAT=tmp$STRAT),
+    tmp = dfNWSets[c("STRAT","TOTWGT","TOTNO")]
+    #seems correct, but APL STRANAL only considers TOTWGT
+    #tmp$SOMECATCH[tmp$TOTWGT!=0 | tmp$TOTNO!=0]<-1
+    tmp$SOMECATCH[tmp$TOTWGT!=0]<-1
+    
+    tmp$SOMECATCH[is.na(tmp$SOMECATCH)]<-0
+    tmp<-merge(dfStrata,tmp,by="STRAT",all.y=T)
+    
+    tmp<-merge(tmp,dfNWAgg[c("STRAT","COUNT")],by="STRAT",all.x=T)
+    tmp$AREA_CALC<-tmp$SQNM*tmp$SOMECATCH
+    
+    tmp.AreaProp<-stats::aggregate(list(AREAPROP=tmp$SOMECATCH), 
+                                   by=list(STRAT=tmp$STRAT), 
                                    FUN=mean)
-      tmp.AreaTotStErr<-aggregate(list(AREATOTSTERR=tmp$AREA_CALC),
+    tmp.LoneStrat<-stats::aggregate(list(AREACNT=tmp$SOMECATCH), 
+                                    by=list(STRAT=tmp$STRAT), 
+                                    FUN=length)
+    tmp.AreaPropStErr<-stats::aggregate(list(AREAPROPSTERR=tmp$SOMECATCH),
                                         by=list(STRAT=tmp$STRAT),
                                         FUN=Mar.utils::st_err)
-      str_stratAreaDet<-merge(dfStrata,tmp.AreaProp,by="STRAT",all.x=T)
-      str_stratAreaDet<-merge(str_stratAreaDet,tmp.LoneStrat,by="STRAT",all.x=T)
-      str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaPropStErr,by="STRAT",all.x=T)
-      str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTot,by="STRAT",all.x=T)
-      str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTotStErr,by="STRAT",all.x=T)
-      str_stratAreaDet[is.na(str_stratAreaDet)]<-0
-      str_stratAreaDet <- str_stratAreaDet[c('STRAT',setdiff(colnames(str_stratAreaDet), colnames(dfStrata)))]
-      if(nrow(str_stratAreaDet[str_stratAreaDet$AREACNT==1,])>0){
-        #If there's a single record within a strata APL doesn't give 0 as the STERRs
-        str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREAPROPSTERR<- str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREAPROP
-        str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREATOTSTERR <- str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREATOT
-      }
-      #APL does not provide the strata with no catches.  Could remove them here.if(nrow(str_stratAreaDet[str_stratAreaDet$AREACNT==1,])>0){
+    tmp.AreaTot<-stats::aggregate(list(AREATOT=tmp$AREA_CALC),
+                                  by=list(STRAT=tmp$STRAT),
+                                  FUN=mean)
+    tmp.AreaTotStErr<-stats::aggregate(list(AREATOTSTERR=tmp$AREA_CALC),
+                                       by=list(STRAT=tmp$STRAT),
+                                       FUN=Mar.utils::st_err)
+    str_stratAreaDet<-merge(dfStrata,tmp.AreaProp,by="STRAT",all.x=T)
+    str_stratAreaDet<-merge(str_stratAreaDet,tmp.LoneStrat,by="STRAT",all.x=T)
+    str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaPropStErr,by="STRAT",all.x=T)
+    str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTot,by="STRAT",all.x=T)
+    str_stratAreaDet<-merge(str_stratAreaDet,tmp.AreaTotStErr,by="STRAT",all.x=T)
+    str_stratAreaDet[is.na(str_stratAreaDet)]<-0
+    str_stratAreaDet <- str_stratAreaDet[c('STRAT',setdiff(colnames(str_stratAreaDet), colnames(dfStrata)))]
+    if(nrow(str_stratAreaDet[str_stratAreaDet$AREACNT==1,])>0){
       #If there's a single record within a strata APL doesn't give 0 as the STERRs
-        str_stratAreaDet = str_stratAreaDet[str_stratAreaDet$AREACNT>0,] 
-        
-      str_stratAreaDet$AREACNT<-NULL
-      return(str_stratAreaDet)
+      str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREAPROPSTERR<- str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREAPROP
+      str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREATOTSTERR <- str_stratAreaDet[str_stratAreaDet$AREACNT==1,]$AREATOT
     }
+    #APL does not provide the strata with no catches.  Could remove them here.if(nrow(str_stratAreaDet[str_stratAreaDet$AREACNT==1,])>0){
+    #If there's a single record within a strata APL doesn't give 0 as the STERRs
+    str_stratAreaDet = str_stratAreaDet[str_stratAreaDet$AREACNT>0,] 
+    
+    str_stratAreaDet$AREACNT<-NULL
+    return(str_stratAreaDet)
+  }
   
   switch(requested, 
          "sets" = calcNWSets(dfRawCatch, dfRawInf, towDist),
