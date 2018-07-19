@@ -6,7 +6,7 @@
 \usage{
 stratisfy(usepkg = "rodbc", agency = "DFO", type = 1, year = NULL,
   season = NULL, missions = NULL, strataTable = "GROUNDFISH.GSSTRATUM",
-  wingspread = 41, towDist = 1.75, strata = c(440:495), areas = NULL,
+  wingspread = 41, towDist = 1.75, strata = c(440:495), areas = "all",
   spp = NULL, bySex = NULL, ageBySex = FALSE, output = "new",
   alkTable = NULL, file_id = NULL)
 }
@@ -55,7 +55,9 @@ value is \code{c(440:495)} (DFO Summer Survey Strata).  Setting this to
 \item{areas}{These are the areas for which you want results.  Some strata 
 can be further broken down by areas, so this allows selection of data within 
 a part of a strata. Setting this to \code{NULL} will result in a pick list if
-areas are available for any of your selected strata.}
+areas are available for any of your selected strata. Setting it to 
+\code{'all'} results in simply using all of the areas.  It can also be set to
+a vector of valid areas (e.g. \code{c('424','511','4xs')})}
 
 \item{spp}{This is the species code for the species you want to analyze.
 The default value is \code{''}, which will result in a pick list. An example 

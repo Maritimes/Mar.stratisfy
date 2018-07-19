@@ -76,7 +76,6 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
     
     tmp<-merge(tmp,dfNWAgg[c("STRAT","COUNT")],by="STRAT",all.x=T)
     tmp$AREA_CALC<-tmp$SQNM*tmp$SOMECATCH
-    
     tmp.AreaProp<-stats::aggregate(list(AREAPROP=tmp$SOMECATCH), 
                                    by=list(STRAT=tmp$STRAT), 
                                    FUN=mean)

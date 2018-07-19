@@ -14,6 +14,8 @@
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, areas= NULL, bySex = NULL, 
                       oracle_cxn = NULL){
+  areaTweak = ""
+  if (!("all" %in% areas))areaTweak = paste0("I.AREA IN (",Mar.utils::SQL_in(areas),") AND")
   getCatch<-function(agency, dfSpp, missions, strata, areas){
     spp=dfSpp$SPEC
     if (agency =="DFO"){
@@ -26,9 +28,9 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                 C.MISSION = I.Mission AND
                 C.SETNO = I.SETNO AND
                 C.SPEC =", spp," AND
+                ",areaTweak,"
                 C.mission IN (",Mar.utils::SQL_in(missions),") AND 
-                I.STRAT IN (",Mar.utils::SQL_in(strata),") AND 
-                I.AREA IN (",Mar.utils::SQL_in(areas),")
+                I.STRAT IN (",Mar.utils::SQL_in(strata),") 
                 ORDER BY C.mission,C.setno
                 ", sep="")
     }else if (agency=="NMFS"){
@@ -36,17 +38,16 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
       sql <-
         paste("select cruise6 mission,to_number(station) setno, 1 size_class, sum(expcatchwt) totwgt, 0 sampwgt, sum(expcatchnum) totno, 0 calwt
                 from
-                usnefsc.uss_catch
+                usnefsc.uss_catch I
                 WHERE
+                ",areaTweak,"
                 to_number(svspp)=", spp," AND
                 cruise6 IN (",Mar.utils::SQL_in(missions),") AND
-                STRATUM   IN (",Mar.utils::SQL_in(strata),") AND 
-                AREA IN (",Mar.utils::SQL_in(areas),")
+                STRATUM   IN (",Mar.utils::SQL_in(strata),")
                 group by
                 cruise6, to_number(station)
                 ORDER BY cruise6, to_number(station)", sep="")
     }
-    browser()
     raw.gscat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
     if (nrow(raw.gscat)<1) stop("Error: No catch data can be found for your selection")
     return(raw.gscat)
@@ -62,32 +63,30 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
           from 
           groundfish.gsinf i 
           where 
+          ",areaTweak,"
           i.MISSION IN (",Mar.utils::SQL_in(missions),") AND
           i.strat IN (",Mar.utils::SQL_in(strata),") AND 
-          I.AREA IN (",Mar.utils::SQL_in(areas),")
-          AND i.type IN (",type,")
+          i.type IN (",type,")
           ORDER BY i.mission, i.setno", sep="")
     }else if (agency=="NMFS"){
       #distance was assumed to be 1.75, but appears to be dopdistb
       sql<-
         paste("SELECT CRUISE6 mission,to_number(station) setno, begin_est_towdate sdate, est_time time, STRATUM strat, 
           area unit_area,  BEGLAT slat, BEGLON slong, mindepth dmin, maxdepth dmax, avgdepth depth, towdur dur, dopdistb dist 
-          FROM USNEFSC.USS_STATION 
-          WHERE CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND
+          FROM USNEFSC.USS_STATION I
+          WHERE 
+          ",areaTweak,"
+          CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND
           STRATUM IN (",Mar.utils::SQL_in(strata),") AND
-          AREA IN (",Mar.utils::SQL_in(areas),") AND
           to_number(SHG) <= ",type," 
           ORDER BY CRUISE6,to_number(station)", sep="")
     }
     raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
     #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
-    
-    if (agency=='DFO'){
+   
       raw.gsinf$SLAT = (as.numeric(substr(raw.gsinf$SLAT,1,2))+(raw.gsinf$SLAT - as.numeric(substr(raw.gsinf$SLAT,1,2))*100)/60)
       raw.gsinf$SLONG = (as.numeric(substr(raw.gsinf$SLONG,1,2))+(raw.gsinf$SLONG - as.numeric(substr(raw.gsinf$SLONG,1,2))*100)/60)*-1
-    }else{
-      
-    }
+   
     return(raw.gsinf)
   }
   getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas){
@@ -144,17 +143,19 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
       #missing fsex, sizeclass,clen
       sql1<- paste("select cruise6 mission, to_number(station) setno, length, 
         age, avg(indwt) fwt,
-        decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen
-        from usnefsc.uss_detail
-        where to_number(svspp)=",spp," AND
+        decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen,
+        ",sppLgrp," binwidth
+        from usnefsc.uss_detail I
+        where 
+          ",areaTweak,"
+        to_number(svspp)=",spp," AND
         CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND 
-        STRATUM IN (",Mar.utils::SQL_in(strata),") AND
-        AREA IN (",Mar.utils::SQL_in(areas),")
+        STRATUM IN (",Mar.utils::SQL_in(strata),") 
         group by cruise6,station,age,length
         ORDER BY cruise6, to_number(station)", sep="")
       raw.gsdet1<-oracle_cxn$thecmd(oracle_cxn$channel, sql1 )
       
-      sql2<- paste("select cruise6 mission, catchsex fsex, station setno,length, 
+      sql2<- paste("select cruise6 mission, catchsex fsex, to_number(station) setno,length, 
         sum(expnumlen) clen, 1 size_class
         from usnefsc.uss_lengths
         where to_number(svspp)=",spp,"
@@ -162,6 +163,7 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
         and catchsex in ('0','1','2')
         group by cruise6,station,length, catchsex
         ORDER BY cruise6, to_number(station)",sep="")
+      
       raw.gsdet2<-oracle_cxn$thecmd(oracle_cxn$channel, sql2 )
       raw.gsdet<-merge(raw.gsdet1,raw.gsdet2, all.x=T) 
       raw.gsdet$FLEN[is.na(raw.gsdet$FLEN)] <- raw.gsdet$LENGTH[is.na(raw.gsdet$FLEN)]

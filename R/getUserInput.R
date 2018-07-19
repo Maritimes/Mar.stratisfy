@@ -103,7 +103,7 @@ Please enter the survey type:"))
   }
   
   getMissionsAndStrata<-function(agency, type, year, season, missions, oracle_cxn){
-    
+    if (is.null(missions)){
     availSeasons = switch(agency,
                           "DFO" = c("SPRING","SUMMER", "FALL"),
                           "NMFS"=c("SPRING","SUMMER", "FALL", "WINTER")) 
@@ -238,7 +238,7 @@ Please make a selection from the available options, or check your parameters\n**
     
     if (NROW(availMissions)==1) {
       missionPick=availMissions[,1]
-      cat(paste0("\nDefaulting to ",missionPick," - the only  mission matching your criteria\n")) 
+      cat(paste0("\n Defaulting to ",missionPick," - the only  mission matching your criteria\n")) 
     }
     while(any(is.na(missionPick))){
       missionPick <- utils::select.list(availMissions[,1],preselect=availMissions[,1],
@@ -249,7 +249,9 @@ Please make a selection from the available options, or check your parameters\n**
         missionPick<-NA
       }
     }
-    
+    } else{
+      missionPick = missions
+    }
     #1) STRATA
     if (agency == "DFO"){
       sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
@@ -545,9 +547,15 @@ sex option.  Please select one from the list.\n")
       )
       
     } else if (agency=="NMFS") {
-      #do this
+      
+      sql <- paste0(
+      "SELECT DISTINCT AREA FROM USNEFSC.USS_STATION
+      WHERE
+      STRATUM IN (",Mar.utils::SQL_in(strata[,1]),") AND
+      CRUISE6 IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
+      ORDER BY AREA"
+      )
     }
-    
     availAreas<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
     
     if (is.null(areas)){
@@ -558,9 +566,8 @@ sex option.  Please select one from the list.\n")
         if (all(!areasPick %in% availAreas$AREA)) print("You must select the areas")
       }
     } else if ("all" %in% areas){
-      areasPick<-availAreas$AREA
+      areasPick<-"all"
     } else {
-      print("Using submitted areas")
       areasPick <-areas
     }
     return(areasPick)

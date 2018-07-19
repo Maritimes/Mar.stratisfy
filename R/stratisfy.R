@@ -124,7 +124,7 @@ stratisfy<-function(usepkg = 'rodbc',
                     wingspread = 41,
                     towDist = 1.75,
                     strata = c(440:495),
-                    areas = NULL,
+                    areas = 'all',
                     spp = NULL,
                     bySex = NULL,
                     ageBySex = FALSE,
@@ -166,15 +166,15 @@ stratisfy<-function(usepkg = 'rodbc',
   dfSpp = spp[[2]]
   ageBySex = spp[[3]]
   rm(spp)
-  dfRawCatch <- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
-  dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
-  dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
+  dfRawCatch <<- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
+  dfRawInf <<- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
+  dfRawDet <<- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
   
   if (!is.null(alkTable))  {
     alkTable <-getAlkTable(alkTable)
     cat("alk table captured, but not applied")
   }
-  # browser()
+
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
   
@@ -213,37 +213,78 @@ stratisfy<-function(usepkg = 'rodbc',
   
   nwData <- merge(allStrat, dfNWAgg, all.x = TRUE)
   nwData[is.na(nwData)]<-0
+  nwData = rbind(nwData,c("STRAT"="TOTAL",colSums(nwData[,!(colnames(nwData) =="STRAT")],na.rm = T)))
   
-  nwData = rbind(nwData,c("STRAT"="TOTAL",colSums(nwData[,!(colnames(nwData) =="STRAT")])))
+  nwData[,2:ncol(nwData)] <- sapply(nwData[,2:ncol(nwData)],as.numeric)
   
   dfNWSets = merge(cbind("STRAT"= dfStrata$STRAT),dfNWSets,all.x=T)
   dfNWSets[is.na(dfNWSets)]<-0
+  dfNWSets = merge(dfRawInf[,c("STRAT","UNIT_AREA","MISSION","SETNO","SLAT","SLONG")],dfNWSets)
   
-  length_by_strat_mean = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
-  length_by_strat_mean[is.na(length_by_strat_mean)]<-0
-  lengthsData$length_by_strat_mean<-length_by_strat_mean
+  lengthsData$length_by_strat_mean = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_mean,all.x=T)
+  #lengthsData$length_by_strat_mean= rbind(lengthsData$length_by_strat_mean,c("CRAP2?",colSums(lengthsData$length_by_strat_mean[,!(colnames(lengthsData$length_by_strat_mean) =="STRAT")],na.rm = T)))
+  colnames(lengthsData$length_by_strat_mean) <- sub("X", "", colnames(lengthsData$length_by_strat_mean))
   
-  length_by_strat_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
-  length_by_strat_se[is.na(length_by_strat_se)]<-0
-  lengthsData$length_by_strat_se<-length_by_strat_se
+  lengthsData$length_by_strat_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_by_strat_se,all.x=T)
+  lengthsData$length_by_strat_se[is.na(lengthsData$length_by_strat_se)]<-0
+  #lengthsData$length_by_strat_se= data.frame(apply(lengthsData$length_by_strat_se, 2, function(x) as.numeric(as.character(x))))
+  #lengthsData$length_by_strat_se<- rbind(lengthsData$length_by_strat_se,c("CRAP9",colSums(lengthsData$length_by_strat_se[,!(colnames(lengthsData$length_by_strat_se) =="STRAT")],na.rm = T)))
   
-  length_total = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
-  length_total[is.na(length_total)]<-0
+  lengthsData$length_total = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total,all.x=T)
+  lengthsData$length_total[is.na(lengthsData$length_total)]<-0
   #add Column Totals
-  length_total = rbind(length_total,c("STRAT"="TOTAL",colSums(length_total[,!(colnames(length_total) =="STRAT")])))
-  lengthsData$length_total<-length_total
+  lengthsData$length_total = rbind(lengthsData$length_total,c("STRAT"="TOTAL",colSums(lengthsData$length_total[,!(colnames(lengthsData$length_total) =="STRAT")],na.rm = T)))
+  lengthsData$length_total[,2:ncol(lengthsData$length_total)] <- sapply(lengthsData$length_total[,2:ncol(lengthsData$length_total)],as.numeric)
+  
+  
   length_total_se = merge(cbind("STRAT"= dfStrata$STRAT),lengthsData$length_total_se,all.x=T)
+  
+  # ageLengthKey$age_mean = cbind(ageLengthKey$age_mean,TOTAL = rowSums(ageLengthKey$age_mean[,-which(colnames(ageLengthKey$age_mean) %in% c("STRAT"))],na.rm = T))
+  # ageLengthKey$age_mean = rbind(ageLengthKey$age_mean,c("CRAP6?",colSums(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],na.rm = T)))
+  # 
+  ####add the colsums!!
   length_total_se[is.na(length_total_se)]<-0
   lengthsData$length_total_se<-length_total_se
+  #lengthsData$length_total_se<-rbind(lengthsData$length_total_se,c("CRAP6?",colSums(lengthsData$length_total_se[,2:ncol(lengthsData$length_total_se)],na.rm = T)))
   
-  dfNWSets = merge(dfNWSets, dfRawInf[,c("STRAT","MISSION","SETNO","SLAT","SLONG","UNIT_AREA")])
+  
+  
+
   weight_by_set = merge(dfRawInf[,c("STRAT","MISSION","SETNO")], dfNWSets[,c("STRAT","MISSION","SETNO", "SLAT","SLONG","UNIT_AREA","TOTWGT")], all.x=TRUE)
   
   if (class(ageLengthKey) == "list"){
-    age_total = ageLengthKey$age_total
-    age_total = rbind(age_total,c("STRAT"="TOTAL",colSums(age_total[,!(colnames(age_total) =="STRAT")])))
-    ageLengthKey$age_total<-age_total
-  }  
+
+     ageLengthKey$age_total$TOTAL = rowSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)
+     ageLengthKey$age_total = rbind(ageLengthKey$age_total,c("TOTAL",colSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)))
+     ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)] <- sapply(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],as.numeric)
+     
+    ageLengthKey$age_table$LENGTHS <- row.names(ageLengthKey$age_table)
+    ageLengthKey$age_table<-ageLengthKey$age_table[,c(ncol(ageLengthKey$age_table),1:ncol(ageLengthKey$age_table)-1)]
+    ageLengthKey$age_table = data.frame(apply(ageLengthKey$age_table, 2, function(x) as.numeric(as.character(x))))
+    
+    
+    ageLengthKey$alw$LENGTHS <- row.names(ageLengthKey$alw)
+    ageLengthKey$alw<-ageLengthKey$alw[,c(ncol(ageLengthKey$alw),1:ncol(ageLengthKey$alw)-1)]
+    #ageLengthKey$alw<-rbind(ageLengthKey$alw,c("CRAP3?",colSums(ageLengthKey$alw[,2:ncol(ageLengthKey$alw)],na.rm = T)) )
+
+    ageLengthKey$alk = data.frame(apply(ageLengthKey$alk, 2, function(x) as.numeric(as.character(x))))
+    ageLengthKey$alk$TOTAL = rowSums(ageLengthKey$alk[,2:ncol(ageLengthKey$alk)],na.rm = T)
+    ageLengthKey$alk = rbind(ageLengthKey$alk,c("TOTAL",colSums(ageLengthKey$alk[,2:ncol(ageLengthKey$alk)],na.rm = T)))
+    ageLengthKey$alk[,2:ncol(ageLengthKey$alk)] <- sapply(ageLengthKey$alk[,2:ncol(ageLengthKey$alk)],as.numeric)
+    
+    ageLengthKey$age_by_set = cbind(ageLengthKey$age_by_set,TOTAL = rowSums(ageLengthKey$age_by_set[,-which(colnames(ageLengthKey$age_by_set) %in% c("STRAT","MISSION","SETNO"))],na.rm = T))
+    
+    ageLengthKey$age_mean = cbind(ageLengthKey$age_mean,TOTAL = rowSums(ageLengthKey$age_mean[,-which(colnames(ageLengthKey$age_mean) %in% c("STRAT"))],na.rm = T))
+    ageLengthKey$age_mean = rbind(ageLengthKey$age_mean,c("CRAP6?",colSums(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],na.rm = T)))
+    ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)] <- sapply(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],as.numeric)
+    
+    ageLengthKey$age_mean_se  = cbind(ageLengthKey$age_mean_se,TOTAL = rowSums(ageLengthKey$age_mean_se[,-which(colnames(ageLengthKey$age_mean_se) %in% c("STRAT"))],na.rm = T))
+   # ageLengthKey$age_mean_se = rbind(ageLengthKey$age_mean_se,c("CRAP7?",colSums(ageLengthKey$age_mean_se[,2:ncol(ageLengthKey$age_mean_se)],na.rm = T)))
+
+   # ageLengthKey$age_total_se$TOTAL = rowSums(ageLengthKey$age_total_se[,-which(colnames(ageLengthKey$age_total_se) %in% c("STRAT"))],na.rm = T)
+    ageLengthKey$age_total_se = rbind(ageLengthKey$age_total_se,c("TOTAL",colSums(ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)],na.rm = T)))
+    ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)] <- sapply(ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)],as.numeric)
+}
   #Add the totals to Strata for approp columns
   dfStrataDataCols =c("SQNM","TUNITS","AREAPROP","AREAPROPSTERR","AREATOT","AREATOTSTERR")
   dfStrataDataTots = colSums(dfStrata[,dfStrataDataCols],na.rm = TRUE)
@@ -285,11 +326,11 @@ stratisfy<-function(usepkg = 'rodbc',
       openxlsx::writeDataTable(wb, x=dfStrata[,c("STRAT","AREATOTSTERR")], sheet = sheet6)
       if (class(ageLengthKey) == "list"){
         sheet7 <- openxlsx::addWorksheet(wb, sheetName = "Age Length Key")
-        openxlsx::writeDataTable(wb, x=data.frame(ageLengthKey$alk), rowNames = TRUE, sheet = sheet7)
+        openxlsx::writeDataTable(wb, x=data.frame(ageLengthKey$alk), rowNames = FALSE, sheet = sheet7)
         sheet8 <- openxlsx::addWorksheet(wb, sheetName = "Age Table")
-        openxlsx::writeDataTable(wb, x=ageLengthKey$age_table, rowNames = TRUE, sheet = sheet8)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$age_table, rowNames = FALSE, sheet = sheet8)
         sheet9 <- openxlsx::addWorksheet(wb, sheetName = "Age Length Weight")
-        openxlsx::writeDataTable(wb, x=ageLengthKey$alw, rowNames = TRUE, sheet = sheet9)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$alw, rowNames = FALSE, sheet = sheet9)
         sheet15 <- openxlsx::addWorksheet(wb, sheetName = "Age By Set")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_by_set, rowNames = FALSE, sheet = sheet15)
         sheet16 <- openxlsx::addWorksheet(wb, sheetName = "Age Mean")
@@ -297,20 +338,20 @@ stratisfy<-function(usepkg = 'rodbc',
         sheet17 <- openxlsx::addWorksheet(wb, sheetName = "Age Mean Standard Error")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_mean_se, rowNames = FALSE, sheet = sheet17)
         sheet18 <- openxlsx::addWorksheet(wb, sheetName = "Age Total")
-        openxlsx::writeDataTable(wb, x=age_total, rowNames = FALSE, sheet = sheet18)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$age_total, rowNames = FALSE, sheet = sheet18)
         sheet19 <- openxlsx::addWorksheet(wb, sheetName = "Age Total Standard Error")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_total_se, rowNames = FALSE, sheet = sheet19)
       } 
       sheet10 <- openxlsx::addWorksheet(wb, sheetName = "Length By Set")
       openxlsx::writeDataTable(wb, x=lengthsData$length_by_set, rowNames = FALSE, sheet = sheet10)
       sheet11 <- openxlsx::addWorksheet(wb, sheetName = "Length Mean")
-      openxlsx::writeDataTable(wb, x=length_by_strat_mean, rowNames = FALSE, sheet = sheet11)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_by_strat_mean, rowNames = FALSE, sheet = sheet11)
       sheet12 <- openxlsx::addWorksheet(wb, sheetName = "Length Mean Standard Error")
-      openxlsx::writeDataTable(wb, x=length_by_strat_se, rowNames = FALSE, sheet = sheet12)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_by_strat_se, rowNames = FALSE, sheet = sheet12)
       sheet13 <- openxlsx::addWorksheet(wb, sheetName = "Length Total")
-      openxlsx::writeDataTable(wb, x=length_total, rowNames = FALSE, sheet = sheet13)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_total, rowNames = FALSE, sheet = sheet13)
       sheet14 <- openxlsx::addWorksheet(wb, sheetName = "Length Total Standard Error")
-      openxlsx::writeDataTable(wb, x=length_total_se, rowNames = FALSE, sheet = sheet14)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_total_se, rowNames = FALSE, sheet = sheet14)
       sheet20 <- openxlsx::addWorksheet(wb, sheetName = "Weight by Set")
       openxlsx::writeDataTable(wb, x=weight_by_set, rowNames = FALSE, sheet = sheet20)
       sheet21 <- openxlsx::addWorksheet(wb, sheetName = "Weight Mean")
@@ -330,11 +371,11 @@ stratisfy<-function(usepkg = 'rodbc',
       openxlsx::writeDataTable(wb, x=dfNWSets, rowNames = FALSE, sheet = sheet3a)
       if (class(ageLengthKey) == "list"){
         sheet4 <- openxlsx::addWorksheet(wb, sheetName = "Age Length Key")
-        openxlsx::writeDataTable(wb, x=data.frame(ageLengthKey$alk), rowNames = TRUE, sheet = sheet4)
+        openxlsx::writeDataTable(wb, x=data.frame(ageLengthKey$alk), rowNames = FALSE, sheet = sheet4)
         sheet5 <- openxlsx::addWorksheet(wb, sheetName = "Age Table")
-        openxlsx::writeDataTable(wb, x=ageLengthKey$age_table, rowNames = TRUE, sheet = sheet5)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$age_table, rowNames = FALSE, sheet = sheet5)
         sheet6 <- openxlsx::addWorksheet(wb, sheetName = "Age Length Weight")
-        openxlsx::writeDataTable(wb, x=ageLengthKey$alw, rowNames = TRUE, sheet = sheet6)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$alw, rowNames = FALSE, sheet = sheet6)
         sheet12 <- openxlsx::addWorksheet(wb, sheetName = "Age By Set")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_by_set, rowNames = FALSE, sheet = sheet12)
         sheet13 <- openxlsx::addWorksheet(wb, sheetName = "Age Mean")
@@ -342,20 +383,20 @@ stratisfy<-function(usepkg = 'rodbc',
         sheet14 <- openxlsx::addWorksheet(wb, sheetName = "Age Mean Standard Error")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_mean_se, rowNames = FALSE, sheet = sheet14)
         sheet15 <- openxlsx::addWorksheet(wb, sheetName = "Age Total")
-        openxlsx::writeDataTable(wb, x=age_total, rowNames = FALSE, sheet = sheet15)
+        openxlsx::writeDataTable(wb, x=ageLengthKey$age_total, rowNames = FALSE, sheet = sheet15)
         sheet16 <- openxlsx::addWorksheet(wb, sheetName = "Age Total Standard Error")
         openxlsx::writeDataTable(wb, x=ageLengthKey$age_total_se, rowNames = FALSE, sheet = sheet16)
       }
       sheet7 <- openxlsx::addWorksheet(wb, sheetName = "Length By Set")
       openxlsx::writeDataTable(wb, x=lengthsData$length_by_set, rowNames = FALSE, sheet = sheet7)
       sheet8 <- openxlsx::addWorksheet(wb, sheetName = "Length Mean")
-      openxlsx::writeDataTable(wb, x=length_by_strat_mean, rowNames = FALSE, sheet = sheet8)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_by_strat_mean, rowNames = FALSE, sheet = sheet8)
       sheet9 <- openxlsx::addWorksheet(wb, sheetName = "Length Mean Standard Error")
-      openxlsx::writeDataTable(wb, x=length_by_strat_se, rowNames = FALSE, sheet = sheet9)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_by_strat_se, rowNames = FALSE, sheet = sheet9)
       sheet10 <- openxlsx::addWorksheet(wb, sheetName = "Length Total")
-      openxlsx::writeDataTable(wb, x=length_total, rowNames = FALSE, sheet = sheet10)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_total, rowNames = FALSE, sheet = sheet10)
       sheet11 <- openxlsx::addWorksheet(wb, sheetName = "Length Total Standard Error")
-      openxlsx::writeDataTable(wb, x=length_total_se, rowNames = FALSE, sheet = sheet11)
+      openxlsx::writeDataTable(wb, x=lengthsData$length_total_se, rowNames = FALSE, sheet = sheet11)
     } 
     openxlsx::saveWorkbook(wb, file = wbName, overwrite=TRUE)
     cat(paste0("\n\nWrote your excel file to ",file.path(getwd(),wbName),""))
