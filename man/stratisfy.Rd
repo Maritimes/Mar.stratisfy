@@ -8,7 +8,8 @@ stratisfy(usepkg = "rodbc", agency = "DFO", type = 1, year = NULL,
   season = NULL, missions = NULL, strataTable = "GROUNDFISH.GSSTRATUM",
   wingspread = 41, towDist = 1.75, strata = c(440:495), areas = "all",
   spp = NULL, bySex = NULL, ageBySex = FALSE, output = "new",
-  alkTable = NULL, file_id = NULL)
+  alkTable = NULL, file_id = NULL, fn.oracle.username = "_none_",
+  fn.oracle.password = "_none_", fn.oracle.dsn = "_none_")
 }
 \arguments{
 \item{usepkg}{The default value is \code{'rodbc'}, but \code{'roracle'} 
@@ -86,6 +87,24 @@ allows you to add additional values for the age length key.}
 
 \item{file_id}{This is a modifier you can have appended to the output 
 filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}}
+
+\item{fn.oracle.username}{default is \code{'_none_'} This is your username for
+accessing oracle objects. If you have a value for this stored in your
+environment (e.g. from an rprofile file), this can be left and that value will
+be used.  If a value for this is provided, it will take priority over your
+existing value.}
+
+\item{fn.oracle.password}{default is \code{'_none_'} This is your password for
+accessing oracle objects. If you have a value for this stored in your
+environment (e.g. from an rprofile file), this can be left and that value will
+be used.  If a value for this is provided, it will take priority over your
+existing value.}
+
+\item{fn.oracle.dsn}{default is \code{'_none_'} This is your dsn/ODBC
+identifier for accessing oracle objects. If you have a value for this stored
+in your environment (e.g. from an rprofile file), this can be left and that
+value will be used.  If a value for this is provided, it will take priority
+over your existing value.}
 }
 \description{
 stratisfy is a program capable of Stratified Analyses of both DFO 

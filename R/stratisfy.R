@@ -100,6 +100,21 @@
 #' allows you to add additional values for the age length key.
 #' @param file_id This is a modifier you can have appended to the output 
 #' filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}
+#' @param fn.oracle.username default is \code{'_none_'} This is your username for
+#' accessing oracle objects. If you have a value for this stored in your
+#' environment (e.g. from an rprofile file), this can be left and that value will
+#' be used.  If a value for this is provided, it will take priority over your
+#' existing value.
+#' @param fn.oracle.password default is \code{'_none_'} This is your password for
+#' accessing oracle objects. If you have a value for this stored in your
+#' environment (e.g. from an rprofile file), this can be left and that value will
+#' be used.  If a value for this is provided, it will take priority over your
+#' existing value.
+#' @param fn.oracle.dsn default is \code{'_none_'} This is your dsn/ODBC
+#' identifier for accessing oracle objects. If you have a value for this stored
+#' in your environment (e.g. from an rprofile file), this can be left and that
+#' value will be used.  If a value for this is provided, it will take priority
+#' over your existing value.
 #' @family Gale-force
 #' @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils make_oracle_cxn
@@ -130,10 +145,13 @@ stratisfy<-function(usepkg = 'rodbc',
                     ageBySex = FALSE,
                     output = "new",
                     alkTable = NULL,
-                    file_id = NULL
+                    file_id = NULL,
+                    fn.oracle.username ="_none_",
+                    fn.oracle.password="_none_",
+                    fn.oracle.dsn="_none_"
 ){
   if (is.null(output))output<-NA
-  oracle_cxn = Mar.utils::make_oracle_cxn(usepkg)
+  oracle_cxn = Mar.utils::make_oracle_cxn(usepkg, fn.oracle.username, fn.oracle.password, fn.oracle.dsn)
   
   agency = getUserInput("agency",agency=agency)
   type = getUserInput("type", agency=agency, type=type, oracle_cxn = oracle_cxn)
