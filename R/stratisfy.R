@@ -60,29 +60,26 @@
 #' list. An example valid value is \code{c('NED2016016')}.  If your choice is 
 #' not valid (given your other selections), you will be presented with a pick
 #' list of valid options. 
-#' @param strataTable  The default value is \code{'GROUNDFISH.GSSTRATUM'}.  
+#' @param strataTable  The default value is \code{NULL}.  
 #' Depending on your data, other valid values may include: 
-#' \code{'USNEFSC.DFO5ZJM','USNEFSC.DFO5ZGHNO','USNEFSC.NMFS5ZJM',
+#' \code{'GROUNDFISH.GSSTRATUM', 'USNEFSC.DFO5ZJM','USNEFSC.DFO5ZGHNO','USNEFSC.NMFS5ZJM',
 #' 'USNEFSC.NMFS5ZGHNO','USNEFSC.NMFS5ZJMC','USNEFSC.NMFS5ZJMU',
-#' 'USNEFSC.NMFS5ZU'}.  Setting this to \code{NULL} will result in a pick list. 
+#' 'USNEFSC.NMFS5ZU'}.
 #' @param wingspread  This is the width in feet of a standard tow.  The default 
 #' value is \code{41}.  Setting this to \code{NULL} will result in a pick list. 
 #' @param towDist  This is the length (NM) of a standard tow.  The default value 
 #' is \code{1.75}.  Setting this to \code{NULL} will result in a pick list. 
 #' @param strata  These are the strata for which you want results.  The default 
-#' value is \code{c(440:495)} (DFO Summer Survey Strata).  Setting this to 
-#' \code{NULL} will result in a pick list. 
+#' value is \code{NULL} The DFO SUmmer survey are c(440:495).  
 #' @param areas  These are the areas for which you want results.  Some strata 
 #' can be further broken down by areas, so this allows selection of data within 
-#' a part of a strata. Setting this to \code{NULL} will result in a pick list if
-#' areas are available for any of your selected strata. Setting it to 
-#' \code{'all'} results in simply using all of the areas.  It can also be set to
-#' a vector of valid areas (e.g. \code{c('424','511','4xs')})
+#' a part of a strata. It can also be set to \code{'all'} or a vector of valid areas 
+#' (e.g. \code{c('424','511','4xs')})
 #' @param spp  This is the species code for the species you want to analyze.  
-#' The default value is \code{''}, which will result in a pick list. An example 
+#' The default value is \code{NULL}, which will result in a pick list. An example 
 #' of a valid, non-empty value is \code{2526}. 
 #' @param bySex If the selected species was measured by sex, this parameter
-#' allows you to perform calculations by sex.  The default value is \code{''}, 
+#' allows you to perform calculations by sex.  The default value is \code{NULL}, 
 #' which will result in a pick list. An example of a valid, non-empty value is 
 #' \code{TRUE}. 
 #' @param ageBySex The APL version of stratisfy ignored sex differences in some 
@@ -135,11 +132,11 @@ stratisfy<-function(usepkg = 'rodbc',
                     year = NULL,
                     season = NULL,
                     missions = NULL,
-                    strataTable = 'GROUNDFISH.GSSTRATUM',
+                    strataTable = NULL,
                     wingspread = 41,
                     towDist = 1.75,
-                    strata = c(440:495),
-                    areas = 'all',
+                    strata = NULL,
+                    areas = NULL,
                     spp = NULL,
                     bySex = NULL,
                     ageBySex = FALSE,

@@ -557,11 +557,11 @@ sex option.  Please select one from the list.\n")
       )
     }
     availAreas<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
-    
+
     if (is.null(areas)){
       while(all(!areasPick %in% availAreas$AREA)){
-        areasPick <- utils::select.list(availAreas$AREA,
-                                        multiple=T, graphics=T, preselect = availAreas$AREA,
+        areasPick <- utils::select.list(as.character(availAreas$AREA),
+                                        multiple=T, graphics=T, preselect = as.character(availAreas$AREA),
                                         title='Please choose the areas:')
         if (all(!areasPick %in% availAreas$AREA)) print("You must select the areas")
       }
