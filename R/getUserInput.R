@@ -138,27 +138,54 @@ Please enter the survey type:"))
                           USNEFSC.USS_MSTR_CRUISE M
                           WHERE 
                           S.STRATUM IN (
-                          SELECT DISTINCT STRAT FROM GROUNDFISH.GSSTRATUM
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.DFO5ZJM
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.DFO5ZGHNO
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJM
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZGHNO
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJMC
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJMU
-                          UNION
-                          SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZU
+    '01010','01020','01030','01040','01050','01060','01070','01080','01090','01100',
+    '01110','01120','01130','01140','01150','01160','01170','01180','01190','01200',
+    '01210','01220','01230','01240','01250','01260','01270','01280','01290','01300',
+    '01310','01320','01330','01340','01350','01351','01360','01370','01380','01390',
+    '01400','01410','01420','01490','01610','01620','01630','01640','01650','01660',
+    '01670','01680','01690','01700','01710','01720','01730','01740','01750','01760',
+    '396','397','398','399','400','401','402','403','404','405','406','407','408',
+    '409','410','411','415','416','417','418','419','420','421','422','423','424',
+    '425','426','427','428','429','431','432','433','434','435','436','437','438',
+    '439','440','441','442','443','444','445','446','447','448','449','450','451',
+    '452','453','454','455','456','457','458','459','460','461','462','463','464',
+    '465','466','467','468','469','470','471','472','473','474','475','476','477',
+    '478','480','481','482','483','484','485','490','491','492','493','494','495',
+    '496','497','498','499','501','502','503','504','505','509','510','511','512',
+    '551','552','553','554','555','556','557','558','559','560','5Z1','5Z2','5Z3',
+    '5Z31','5Z32','5Z33','5Z34','5Z4','5Z41','5Z42','5Z5','5Z6','5Z7','5Z8','5Z9',
+    '802','803','804','805','806','807','808','809','812','813','814','815','816',
+    '817','818','819','822','823','824','825','826','827','828','829','832','833',
+    '834','835','836','837','838','839','842','843','844','845','846','847','848',
+    '849','852','853','854','855','856','857','858','859','862','863','864','865',
+    '866','867','868','869','872','873','874','875','876','877','878','879','A16',
+    'A17','A18','A21','A22','C16','C17','C18','C21','C22','U13','U14','U15','U16',
+    'U17','U18','U19','U20','U21','U22','U23','U24','U25','U26','U27','U28','U29',
+    'U30','U31','U32','U33','U34','U35','U36','U37','U38','U39','U40','U41','U42',
+    'U43','U44','U45','U46','U47','U48','U49'
                           ) AND 
                           S.CRUISE6 = M.CRUISE6 AND
                           S.SHG <= ",type," AND 
                           M.SEASON = '",seasonpick, "'")
       
     }
+    #replaced these with hardcoded strata to speed extraction Aug 31, 2018
+    # SELECT DISTINCT STRAT FROM GROUNDFISH.GSSTRATUM
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.DFO5ZJM
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.DFO5ZGHNO
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJM
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZGHNO
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJMC
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZJMU
+    # UNION
+    # SELECT DISTINCT STRAT FROM USNEFSC.NMFS5ZU
+
     
     cat("\n Checking years matching your criteria...\n")
     availYears = oracle_cxn$thecmd(oracle_cxn$channel, year.query)
@@ -324,29 +351,33 @@ Please make a selection from the available options, or check your parameters\n**
       if (strataTable %in% quickStrataTables)return(strataTable)
     }
     strataTablePick<-NA 
-    stratList = Mar.utils::SQL_in(dfMissionsStrata[,1])
+    
+    
+      stratList_n = Mar.utils::SQL_in(dfMissionsStrata[,1], apos = F)
+      stratList_c = Mar.utils::SQL_in(dfMissionsStrata[,1], apos = T)
+      
+      if (!all(is.numeric(dfMissionsStrata[,1])))stratList_n=Mar.utils::SQL_in(dfMissionsStrata[,1], apos = T)
     #check which tables contain strata like the ones we got from the mission
     strataTableSql = paste0("
                         SELECT SRC, cnt FROM (
-                        SELECT 'GROUNDFISH.GSSTRATUM' SRC, COUNT(*) cnt FROM GROUNDFISH.GSSTRATUM WHERE STRAT IN (",stratList,")
+                        SELECT 'GROUNDFISH.GSSTRATUM' SRC, COUNT(*) cnt FROM GROUNDFISH.GSSTRATUM WHERE STRAT IN (",stratList_c,")
                         UNION
-                        SELECT 'USNEFSC.DFO5ZJM' SRC, COUNT(*) cnt FROM USNEFSC.DFO5ZJM WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.DFO5ZJM' SRC, COUNT(*) cnt FROM USNEFSC.DFO5ZJM WHERE STRAT IN (",stratList_c,")
                         UNION
-                        SELECT 'USNEFSC.DFO5ZGHNO' SRC, COUNT(*) cnt FROM USNEFSC.DFO5ZGHNO WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.DFO5ZGHNO' SRC, COUNT(*) cnt FROM USNEFSC.DFO5ZGHNO WHERE STRAT IN (",stratList_c,")
                         UNION
-                        SELECT 'USNEFSC.NMFS5ZJM' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJM WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.NMFS5ZJM' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJM WHERE STRAT IN (",stratList_n,")
                         UNION
-                        SELECT 'USNEFSC.NMFS5ZGHNO' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZGHNO WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.NMFS5ZGHNO' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZGHNO WHERE STRAT IN (",stratList_n,")
                         UNION
-                        SELECT 'USNEFSC.NMFS5ZJMC' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJMC WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.NMFS5ZJMC' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJMC WHERE STRAT IN (",stratList_n,")
                         UNION
-                        SELECT 'USNEFSC.NMFS5ZJMU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJMU WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.NMFS5ZJMU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZJMU WHERE STRAT IN (",stratList_n,")
                         UNION
-                        SELECT 'USNEFSC.NMFS5ZU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZU WHERE STRAT IN (",stratList,")
+                        SELECT 'USNEFSC.NMFS5ZU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZU WHERE STRAT IN (",stratList_n,")
                         )
                         WHERE cnt >0 ORDER BY CNT DESC") 
     availStrataTables<-oracle_cxn$thecmd(oracle_cxn$channel, strataTableSql)
-    
     
     if (NROW(availStrataTables)==0){
       stop("\n\n!!!ABORTING!!!\nNo Strata Tables meet your criteria")
@@ -356,7 +387,6 @@ Please make a selection from the available options, or check your parameters\n**
     }else {
       while(is.na(strataTablePick)){
         if (!strataTablePick %in% availStrataTables) cat("\nYou must select a strata table (the number in brackets shows how many of your strata are present in the table)\n")
-        
         strataTablePick <- utils::select.list(paste0(availStrataTables[,1]," (",availStrataTables[,2],")"),multiple=F, graphics=T, 
                                               title='Strata Table?')
         strataTablePick = gsub( " *\\(\\d{1,3}\\) *", "", strataTablePick)
@@ -515,7 +545,7 @@ sex option.  Please select one from the list.\n")
     sql = paste0("SELECT * FROM ",strataTable, " WHERE 1=1 ", strata.tweak, " ORDER BY STRAT")
     availStrat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
     while(all(!strataPick %in% availStrat$STRAT)){
-      strataPick <- utils::select.list(availStrat$STRAT,
+      strataPick <- utils::select.list(as.character(availStrat$STRAT),
                                        multiple=T, graphics=T, preselect = strata.preselect,
                                        title='Please choose the strata:')
       if (all(!strataPick %in% availStrat$STRAT)) print("You must select the strata")
@@ -557,8 +587,7 @@ sex option.  Please select one from the list.\n")
       )
     }
     availAreas<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
-
-    if (is.null(areas)){
+    if (is.null(areas) & nrow(availAreas)>0){
       while(all(!areasPick %in% availAreas$AREA)){
         areasPick <- utils::select.list(as.character(availAreas$AREA),
                                         multiple=T, graphics=T, preselect = as.character(availAreas$AREA),
