@@ -290,7 +290,7 @@ stratisfy<-function(usepkg = 'rodbc',
     ageLengthKey$age_by_set = cbind(ageLengthKey$age_by_set,TOTAL = rowSums(ageLengthKey$age_by_set[,-which(colnames(ageLengthKey$age_by_set) %in% c("STRAT","MISSION","SETNO"))],na.rm = T))
     
     ageLengthKey$age_mean = cbind(ageLengthKey$age_mean,TOTAL = rowSums(ageLengthKey$age_mean[,-which(colnames(ageLengthKey$age_mean) %in% c("STRAT"))],na.rm = T))
-    ageLengthKey$age_mean = rbind(ageLengthKey$age_mean,c("CRAP6?",colSums(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],na.rm = T)))
+    #ageLengthKey$age_mean = rbind(ageLengthKey$age_mean,c("CRAP6?",colSums(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],na.rm = T)))
     ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)] <- sapply(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],as.numeric)
     
     ageLengthKey$age_mean_se  = cbind(ageLengthKey$age_mean_se,TOTAL = rowSums(ageLengthKey$age_mean_se[,-which(colnames(ageLengthKey$age_mean_se) %in% c("STRAT"))],na.rm = T))
