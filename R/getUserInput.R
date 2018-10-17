@@ -532,10 +532,12 @@ sex option.  Please select one from the list.\n")
   
   getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata, oracle_cxn){
     strataPick<-NA
+    addZ<-F
     if (!is.null(strata)) strataPick <-strata
     if (all(nchar(dfMissionsStrata[,1])>3)){
       strata.tweak = "AND LENGTH(STRAT)=5"
       strata.preselect=""
+      addZ<-T
     }else if (all(nchar(dfMissionsStrata[,1])==3)){
       strata.tweak = paste0("AND LENGTH(STRAT) = 3 AND SUBSTR(STRAT,1,1) IN ('3','4','5')")
       strata.preselect=as.character(c(440:495))
@@ -552,6 +554,8 @@ sex option.  Please select one from the list.\n")
     }
     
     dfStrata = availStrat[availStrat$STRAT %in% strataPick,]
+    
+    if (addZ) dfStrata[,"STRAT"]<-paste0(0,dfStrata[,"STRAT"])
     #calculate strat areas into tunits; US nautical mile is 6080.2ft
     sql2<- paste("SELECT strat, area SQNM, 
                   nvl(area,0)/(",towDist,"*(",wingspread,"/6080.2)) tunits 
@@ -560,7 +564,7 @@ sex option.  Please select one from the list.\n")
           strat IN (",Mar.utils::SQL_in(dfStrata[,1]),")
            ORDER BY strat", sep="")
     dfStrata.det<-oracle_cxn$thecmd(oracle_cxn$channel, sql2)
-    if (agency=="NMFS") dfStrata.det$STRAT<-sprintf("%05s", dfStrata.det$STRAT)
+    if (addZ) dfStrata.det[,"STRAT"]<-paste0(0,dfStrata.det[,"STRAT"])
     dfStrata.det= merge(dfStrata, dfStrata.det)
     dfStrata.det<-dfStrata.det[order(dfStrata.det$STRAT),] 
     return(dfStrata.det)
@@ -571,7 +575,7 @@ sex option.  Please select one from the list.\n")
       sql <- paste0(
         "SELECT DISTINCT AREA FROM GROUNDFISH.GSINF
         WHERE
-        STRAT IN (",Mar.utils::SQL_in(strata[,1]),") AND
+        STRAT IN (",Mar.utils::SQL_in(strata),") AND
         MISSION IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
         ORDER BY AREA"
       )
@@ -581,7 +585,7 @@ sex option.  Please select one from the list.\n")
       sql <- paste0(
       "SELECT DISTINCT AREA FROM USNEFSC.USS_STATION
       WHERE
-      STRATUM IN (",Mar.utils::SQL_in(strata[,1]),") AND
+      STRATUM IN (",Mar.utils::SQL_in(strata),") AND
       CRUISE6 IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
       ORDER BY AREA"
       )

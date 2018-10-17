@@ -15,10 +15,11 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, areas= NULL, bySex = NULL, 
                       oracle_cxn = NULL){
   areaTweak = ""
-  if (!("all" %in% areas))areaTweak = paste0("I.AREA IN (",Mar.utils::SQL_in(areas),") AND")
+  
   getCatch<-function(agency, dfSpp, missions, strata, areas){
     spp=dfSpp$SPEC
     if (agency =="DFO"){
+      if (!("all" %in% areas))areaTweak = paste0("I.AREA IN (",Mar.utils::SQL_in(areas),") AND")
       sql <-
         paste("select C.mission,C.setno,C.size_class,C.totwgt,C.sampwgt,C.totno,C.calwt
                 from
@@ -34,19 +35,22 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                 ORDER BY C.mission,C.setno
                 ", sep="")
     }else if (agency=="NMFS"){
+      if (!("all" %in% areas))areaTweak = paste0("S.AREA IN (",Mar.utils::SQL_in(areas),") AND")
       #adding fake values for calwt(0), size_class(1), and sampwgt(0) so data format matches CDN data
       sql <-
-        paste("select cruise6 mission,to_number(station) setno, 1 size_class, sum(expcatchwt) totwgt, 0 sampwgt, sum(expcatchnum) totno, 0 calwt
+        paste("select I.cruise6 mission,to_number(I.station) setno, 1 size_class, sum(I.expcatchwt) totwgt, 0 sampwgt, sum(I.expcatchnum) totno, 0 calwt
                 from
-                usnefsc.uss_catch I
+                usnefsc.uss_catch I,
+                usnefsc.uss_station S
                 WHERE
+                I.ID = S.ID AND 
                 ",areaTweak,"
-                to_number(svspp)=", spp," AND
-                cruise6 IN (",Mar.utils::SQL_in(missions),") AND
-                STRATUM   IN (",Mar.utils::SQL_in(strata),")
+                to_number(I.svspp)=", spp," AND
+                I.cruise6 IN (",Mar.utils::SQL_in(missions),") AND
+                I.STRATUM   IN (",Mar.utils::SQL_in(strata),")
                 group by
-                cruise6, to_number(station)
-                ORDER BY cruise6, to_number(station)", sep="")
+                I.cruise6, to_number(I.station)
+                ORDER BY I.cruise6, to_number(I.station)", sep="")
     }
     raw.gscat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
     if (nrow(raw.gscat)<1) stop("Error: No catch data can be found for your selection")

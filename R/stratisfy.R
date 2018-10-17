@@ -158,32 +158,30 @@ stratisfy<-function(usepkg = 'rodbc',
   dfMissions = missionsAndStrata[[1]]
   dfMissionsStrata = missionsAndStrata[[2]]
   rm(missionsAndStrata)
-  
+
   strataTable = getUserInput("strataTable", strataTable=strataTable, 
                              dfMissionsStrata=dfMissionsStrata, 
                              oracle_cxn = oracle_cxn)
-  
   wingspread = getUserInput("wingspread", agency=agency, wingspread=wingspread)
   towDist = getUserInput("towDist", towDist=towDist)
-  
   dfStrata = getUserInput("strata",agency=agency, strataTable=strataTable, 
                           strata = strata, dfMissionsStrata=dfMissionsStrata, 
                           towDist=towDist, wingspread=wingspread, 
                           oracle_cxn = oracle_cxn)
-  
   areas = getUserInput("areas", agency=agency, missions=dfMissions, 
-                       strata = dfMissionsStrata, areas = areas, 
+                       strata = dfStrata[,"STRAT"], areas = areas, 
                        oracle_cxn = oracle_cxn)
-  
   spp = getUserInput("spp", agency = agency, spp=spp, bySex = bySex, 
                      ageBySex = ageBySex, oracle_cxn = oracle_cxn)
   bySex = spp[[1]]
   dfSpp = spp[[2]]
   ageBySex = spp[[3]]
   rm(spp)
+
   dfRawCatch <<- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
   dfRawInf <<- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
   dfRawDet <<- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
+  if (all(nchar(dfRawInf[,"STRAT"])>3))dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
   
   if (!is.null(alkTable))  {
     alkTable <-getAlkTable(alkTable)
