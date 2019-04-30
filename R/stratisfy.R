@@ -181,13 +181,12 @@ stratisfy<-function(usepkg = 'rodbc',
   dfRawCatch <<- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
   dfRawInf <<- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
   dfRawDet <<- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
-  if (all(nchar(dfRawInf[,"STRAT"])>3))dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
-  
+  #if (all(nchar(dfRawInf[,"STRAT"])>3))dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
+  if (all(nchar(dfRawInf[,"STRAT"]) ==4)) dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
   if (!is.null(alkTable))  {
     alkTable <-getAlkTable(alkTable)
     cat("alk table captured, but not applied")
   }
-
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
   
