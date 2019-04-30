@@ -537,7 +537,7 @@ sex option.  Please select one from the list.\n")
     if (all(nchar(dfMissionsStrata[,1])>3)){
       strata.tweak = "AND LENGTH(STRAT)=5"
       strata.preselect=""
-      addZ<-T
+      if (all(nchar(dfMissionsStrata[,1]) ==4)) addZ<-T
     }else if (all(nchar(dfMissionsStrata[,1])==3)){
       strata.tweak = paste0("AND LENGTH(STRAT) = 3 AND SUBSTR(STRAT,1,1) IN ('3','4','5')")
       strata.preselect=as.character(c(440:495))
