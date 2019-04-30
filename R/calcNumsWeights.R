@@ -70,10 +70,8 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
     #seems correct, but APL STRANAL only considers TOTWGT
     #tmp$SOMECATCH[tmp$TOTWGT!=0 | tmp$TOTNO!=0]<-1
     tmp$SOMECATCH[tmp$TOTWGT!=0]<-1
-    
     tmp$SOMECATCH[is.na(tmp$SOMECATCH)]<-0
     tmp<-merge(dfStrata,tmp,by="STRAT",all.y=T)
-    
     tmp<-merge(tmp,dfNWAgg[c("STRAT","COUNT")],by="STRAT",all.x=T)
     tmp$AREA_CALC<-tmp$SQNM*tmp$SOMECATCH
     tmp.AreaProp<-stats::aggregate(list(AREAPROP=tmp$SOMECATCH), 
