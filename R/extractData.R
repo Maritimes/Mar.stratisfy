@@ -57,6 +57,8 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
     return(raw.gscat)
   }
   getInf<-function(agency, missions, strata, type, areas){
+    
+    if (!("all" %in% areas))areaTweak = paste0("I.AREA IN (",Mar.utils::SQL_in(areas),") AND")
     if (agency=='DFO'){
       sql<-
         paste("select i.mission, i.setno,i.sdate,i.time,i.strat,
@@ -85,6 +87,7 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
           to_number(SHG) <= ",type," 
           ORDER BY CRUISE6,to_number(station)", sep="")
     }
+
     raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
     #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
    
@@ -151,7 +154,6 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
         ",sppLgrp," binwidth
         from usnefsc.uss_detail I
         where 
-          ",areaTweak,"
         to_number(svspp)=",spp," AND
         CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND 
         STRATUM IN (",Mar.utils::SQL_in(strata),") 

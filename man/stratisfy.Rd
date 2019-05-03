@@ -5,10 +5,10 @@
 \title{stratisfy}
 \usage{
 stratisfy(usepkg = "rodbc", agency = "DFO", type = 1, year = NULL,
-  season = NULL, missions = NULL, strataTable = NULL, wingspread = 41,
-  towDist = 1.75, strata = NULL, areas = NULL, spp = NULL,
-  bySex = NULL, ageBySex = FALSE, output = "new", alkTable = NULL,
-  file_id = NULL, fn.oracle.username = "_none_",
+  season = NULL, missions = NULL, strataTable = NULL,
+  wingspread = 41, towDist = 1.75, strata = NULL, areas = NULL,
+  spp = NULL, bySex = NULL, ageBySex = FALSE, output = "new",
+  alkTable = NULL, file_id = NULL, fn.oracle.username = "_none_",
   fn.oracle.password = "_none_", fn.oracle.dsn = "_none_")
 }
 \arguments{
@@ -155,3 +155,4 @@ Fisheries and Oceans Canada
 \author{
 Mike McMahon, \email{Mike.McMahon@dfo-mpo.gc.ca}
 }
+\concept{Gale-force}

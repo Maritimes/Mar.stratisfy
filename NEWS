@@ -2,7 +2,8 @@ Mar.stranal 2019.04.30
 ==============
 
 Changes:
-
+2019.05.03
+* fixes issue with strata selections not honouring area choice
 2019.04.30
 * fixes NMFS strata identification
 * adds version check
