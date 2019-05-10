@@ -1,7 +1,7 @@
 Package: Mar.stratisfy
 Type: Package
 Title: Stratisfy: STRANAL functionality in R
-Version: 2019.05.03
+Version: 2019.05.10
 Authors@R: c( person("Mike", "McMahon", email="Mike.McMahon@dfo-mpo.gc.ca", role=c("aut", "cre")) )
 Maintainer: Mike McMahon <Mike.McMahon@dfo-mpo.gc.ca>
 Description: This package attempts to imitate the functionality of the original APL application. Stratisfaction guaranteed or your money back!
