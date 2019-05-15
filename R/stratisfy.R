@@ -177,7 +177,6 @@ stratisfy<-function(usepkg = 'rodbc',
   dfSpp = spp[[2]]
   ageBySex = spp[[3]]
   rm(spp)
-
   dfRawCatch <<- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
   dfRawInf <<- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
   dfRawDet <<- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
@@ -190,12 +189,10 @@ stratisfy<-function(usepkg = 'rodbc',
   dfNWSets <- calcNumsWeights('sets',dfRawCatch=dfRawCatch,dfRawInf=dfRawInf, towDist=towDist)
   dfNWAgg <- calcNumsWeights('setsAgg', dfNWSets=dfNWSets, dfStrata=dfStrata)
   
-  
   dfStrata <- merge(dfStrata, calcNumsWeights('strataProp', dfNWSets=dfNWSets, 
                                               dfStrata=dfStrata, dfNWAgg=dfNWAgg), all.x=T)
   allStrat = as.data.frame(dfStrata[,"STRAT"])
   colnames(allStrat)<-"STRAT"
-  
   lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
                            dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
                            towDist=towDist, bySex = bySex)

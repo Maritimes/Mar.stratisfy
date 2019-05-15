@@ -58,12 +58,12 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
           agelen[(is.na(agelen$SAMPWGT)|agelen$SAMPWGT==0) & 
                    (!is.na(agelen$TOTWGT) & agelen$TOTWGT !=0),]$TOTWGT
       }
-      if (nrow(agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),])>0){
-        agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),]$CAGE <- 
-          agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),]$RAW_TOTWGT/
-          agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),]$SAMPWGT*
-          (towDist/agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),]$DIST)*
-          agelen[agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT),]$CLEN
+      if (nrow(agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),])>0){
+        agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$CAGE <- 
+          agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$RAW_TOTWGT/
+          agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$SAMPWGT*
+          (towDist/agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$DIST)*
+          agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$CLEN
       }
       #if sampwgt ==0, cage ==0
       if (nrow(agelen[!is.na(agelen$SAMPWGT) & agelen$SAMPWGT==0,])>0) 
@@ -72,8 +72,8 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       if(nrow(agelen[is.na(agelen$SAMPWGT),])>0)
         agelen[is.na(agelen$SAMPWGT),]$CAGE<- NA
       if(nrow(agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),])>0) 
-        agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$CAGE<-
-          agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$TOTNO*agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$CLEN/agelen[agelen$CAGE == 0 & agelen$TOTNO !=0,]$RAW_TOTNO
+        agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),]$CAGE<-
+          agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),]$TOTNO*agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),]$CLEN/agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),]$RAW_TOTNO
       
     }else if (agency=="NMFS"){
       agelen$CAGE<-agelen$CLEN

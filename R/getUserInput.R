@@ -281,12 +281,11 @@ Please make a selection from the available options, or check your parameters\n**
     }
     #1) STRATA
     if (agency == "DFO"){
-      sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
+      sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE TYPE = ",type," AND MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
     } else if (agency == "NMFS"){
-      sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRATUM")
+      sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE SHG <= ",type," AND CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRATUM")
     }
     availStrata = oracle_cxn$thecmd(oracle_cxn$channel,  sql1)
-    # browser()
     # #2) AREAS
     # f (agency == "DFO"){
     #   sql2 = paste0("SELECT DISTINCT AREA FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
