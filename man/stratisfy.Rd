@@ -4,12 +4,28 @@
 \alias{stratisfy}
 \title{stratisfy}
 \usage{
-stratisfy(usepkg = "rodbc", agency = "DFO", type = 1, year = NULL,
-  season = NULL, missions = NULL, strataTable = NULL,
-  wingspread = 41, towDist = 1.75, strata = NULL, areas = NULL,
-  spp = NULL, bySex = NULL, ageBySex = FALSE, output = "new",
-  alkTable = NULL, file_id = NULL, fn.oracle.username = "_none_",
-  fn.oracle.password = "_none_", fn.oracle.dsn = "_none_")
+stratisfy(
+  usepkg = "rodbc",
+  agency = "DFO",
+  type = 1,
+  year = NULL,
+  season = NULL,
+  missions = NULL,
+  strataTable = NULL,
+  wingspread = 41,
+  towDist = 1.75,
+  strata = NULL,
+  areas = NULL,
+  spp = NULL,
+  bySex = NULL,
+  ageBySex = FALSE,
+  output = "new",
+  alkTable = NULL,
+  file_id = NULL,
+  fn.oracle.username = "_none_",
+  fn.oracle.password = "_none_",
+  fn.oracle.dsn = "_none_"
+)
 }
 \arguments{
 \item{usepkg}{The default value is \code{'rodbc'}, but \code{'roracle'} 

@@ -217,7 +217,8 @@ Please enter the survey type:"))
                              M.MISSION = I.MISSION AND 
                              I.TYPE = ",type," AND 
                              M.YEAR = ",yearpick," AND
-                             M.SEASON = '",seasonpick, "'
+                             M.SEASON = '",seasonpick, "' AND 
+                             M.MISSION IS NOT NULL
                              ORDER BY SUBSTR(M.MISSION, 4) DESC")
     } else if (agency == "NMFS"){
       mission.query = paste0("SELECT 
@@ -281,9 +282,9 @@ Please make a selection from the available options, or check your parameters\n**
     }
     #1) STRATA
     if (agency == "DFO"){
-      sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE TYPE = ",type," AND MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRAT")
+      sql1 = paste0("SELECT DISTINCT STRAT FROM GROUNDFISH.GSINF WHERE TYPE = ",type," AND MISSION IN (",Mar.utils::SQL_in(missionPick),") AND STRAT IS NOT NULL ORDER BY STRAT")
     } else if (agency == "NMFS"){
-      sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE SHG <= ",type," AND CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY STRATUM")
+      sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE SHG <= ",type," AND CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") AND STRATUM IS NOT NULL ORDER BY STRATUM")
     }
     availStrata = oracle_cxn$thecmd(oracle_cxn$channel,  sql1)
     # #2) AREAS
@@ -575,7 +576,8 @@ sex option.  Please select one from the list.\n")
         "SELECT DISTINCT AREA FROM GROUNDFISH.GSINF
         WHERE
         STRAT IN (",Mar.utils::SQL_in(strata),") AND
-        MISSION IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
+        MISSION IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),") AND
+        AREA IS NOT NULL
         ORDER BY AREA"
       )
       
@@ -585,7 +587,8 @@ sex option.  Please select one from the list.\n")
       "SELECT DISTINCT AREA FROM USNEFSC.USS_STATION
       WHERE
       STRATUM IN (",Mar.utils::SQL_in(strata),") AND
-      CRUISE6 IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),")
+      CRUISE6 IN (",Mar.utils::SQL_in(data.frame(missions)[,1]),") AND
+      AREA IS NOT NULL
       ORDER BY AREA"
       )
     }
