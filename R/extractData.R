@@ -13,7 +13,7 @@
 #' @keywords internal
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, areas= NULL, bySex = NULL, 
-                      oracle_cxn = NULL){
+                      oracle_cxn = NULL, useBins=T){
   areaTweak = ""
   
   getCatch<-function(agency, dfSpp, missions, strata, areas){
@@ -96,7 +96,7 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
    
     return(raw.gsinf)
   }
-  getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas){
+  getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
     spp=dfSpp$SPEC
     sppLgrp = dfSpp$LGRP
     #orig stratisfy is inconsistent with berried females:
@@ -110,10 +110,15 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
       sexFilt = ""
     }
     if (agency=='DFO'){
+      if (useBins){
+        binIt = paste("decode(",sppLgrp,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen")
+      }else{
+        binIt = "d.flen"
+      }
       # APL did NOT limit det results by strata, or type
       sql<-paste("select d.mission,d.setno,d.size_class,
       nvl(d.fsex,0) fsex,d.age, d.fwt,         
-       decode(",sppLgrp,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen,          
+       ",binIt,",          
        s.lgrp binwidth,s.lfsexed bysex, d.clen          
        from          
        groundfish.gsdet d, groundfish.gsspec s, groundfish.gsinf i 
@@ -129,8 +134,8 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
        ",sexFilt,"
        d.SPEC=",spp," 
        ORDER BY d.mission,d.setno", sep="")
+
       raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
-      
       #since berried and normal females get combined, add the CLEN for sets
       # raw.gsdet = 
       #   stats::aggregate(list(CLEN = raw.gsdet$CLEN),
@@ -147,10 +152,15 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
       #             FUN = sum, na.rm=TRUE)
       
     }else if (agency=="NMFS"){
+      if (useBins){
+        binIt = paste("decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen")
+      }else{
+        binIt = "length flen"
+      }
       #missing fsex, sizeclass,clen
       sql1<- paste("select cruise6 mission, to_number(station) setno, length, 
         age, avg(indwt) fwt,
-        decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen,
+        ",binIt,",
         ",sppLgrp," binwidth
         from usnefsc.uss_detail I
         where 
@@ -180,6 +190,6 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
   switch(requested, 
          "catch" = getCatch(agency,dfSpp,missions, strata, areas), 
          "inf" = getInf(agency, missions, strata, type, areas),
-         "det" = getDet(agency, missions, strata, dfSpp, bySex, type, areas)
+         "det" = getDet(agency, missions, strata, dfSpp, bySex, type, areas, useBins)
   )
 }

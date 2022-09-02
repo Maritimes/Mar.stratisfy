@@ -15,6 +15,7 @@
 # @param lset  The default value is \code{NULL}.
 # @param output  The default value is \code{NULL}.
 # @param ageBySex  The default value is \code{NULL}.
+# @param useBins The default value is \code{TRUE}. Should data be binned using the length groups from GSPEC?
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils st_err
@@ -31,19 +32,29 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
                      dfRawDet=NULL, dfRawInf = NULL, dfStrata = NULL, 
                      dfSpp=NULL, towDist=NULL,  bySex = NULL,
                      agelen = NULL, lengthsTotals = NULL, lset=NULL,
-                     output = NULL, ageBySex = NULL){
-  
+                     output = NULL, ageBySex = NULL, useBins=T){
   calcLengths<-function( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, dfSpp, 
-                         towDist, bySex){
-    sppLgrp = dfSpp$LGRP
+                         towDist, bySex, useBins){
+    if (useBins){
+      sppLgrp = dfSpp$LGRP
+    }else{
+      sppLgrp = 1
+    }
     #remove records without weight or totalno
     agelen <- dfNWSets
     agelen <- merge(agelen, dfRawDet, by=c("MISSION", "SETNO","SIZE_CLASS"), all.x=T) 
     agelen <- merge(agelen, dfRawInf[,c("MISSION", "SETNO", "STRAT",
                                         "DIST","DMIN","DMAX","DEPTH","TIME")], 
                     by=c("MISSION", "SETNO", "STRAT"), all.x=T) 
-    if (nrow(agelen[is.na(agelen$BINWIDTH),])>0) 
-      agelen[is.na(agelen$BINWIDTH),]$BINWIDTH <- as.numeric(sppLgrp)
+    
+    if (nrow(agelen[is.na(agelen$BINWIDTH),])>0){
+      if (useBins){
+        agelen[is.na(agelen$BINWIDTH),]$BINWIDTH <- as.numeric(sppLgrp) 
+      }else{
+        agelen[is.na(agelen$BINWIDTH),]$BINWIDTH <- 1
+      }
+    } 
+      
     if (nrow( agelen[is.na(agelen$FLEN),])>0) agelen[is.na(agelen$FLEN),]$FLEN <- 0
     agelen$FLEN<-floor(agelen$FLEN/agelen$BINWIDTH)*agelen$BINWIDTH 
     agelen$CAGE<-NA
@@ -152,8 +163,8 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     
     length_total =  merge(length_by_strat_mean, dfStrata[,c("STRAT","TUNITS")])
     length_total <- cbind(length_total[1],
-                         length_total[2:(ncol(length_total)-1)]*
-                           length_total$TUNITS)    
+                          length_total[2:(ncol(length_total)-1)]*
+                            length_total$TUNITS)    
     
     length_total_se =  merge(length_by_strat_se, dfStrata[,c("STRAT","TUNITS")])
     length_total_se = cbind(length_total_se[1],
@@ -166,11 +177,11 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
                  length_total = length_total,
                  length_total_se = length_total_se,
                  lset = lset)
-
+    
     return(results)
   }
   calcAgeKey<-function(agelen, dfSpp, lengthsTotals, lset, dfStrata, bySex, 
-                       output, ageBySex){
+                       output, ageBySex, useBins){
     if (nrow(agelen[!is.na(agelen$AGE),])==0)return(-1)
     theSexes <- unique(lset$FSEX)
     if (length(theSexes)==1){
@@ -181,7 +192,11 @@ Reverting to ageBySex=FALSE"))
     }
     
     
-    sppLgrp = dfSpp$LGRP
+    if (useBins){
+      sppLgrp = dfSpp$LGRP
+    }else{
+      sppLgrp = 1
+    }
     
     setID=unique(lset[lset$STRAT!="FAKE",c("STRAT", "MISSION", "SETNO")])
     setID = setID[order(setID$STRAT,setID$MISSION,setID$SETNO),]
@@ -239,11 +254,11 @@ Reverting to ageBySex=FALSE"))
     # alk<-cbind(alk,"TOTAL"=rowSums(alk)) 
     # alk<-rbind(alk, "TOTAL"=colSums(alk))
     # Age Length Weight ------------------------------------------------------
-
+    
     if (bySex){
       alw<-  stats::aggregate(FWT~AGE+FLEN+FSEX,data=agelen,FUN=mean)
       fakeAgeRows = expand.grid(AGE = all.ages, FLEN=-1, FWT = -1, FSEX = unique(agelen[!is.na(agelen$FSEX),"FSEX"]))
-
+      
       alw=rbind(alw,fakeAgeRows)
       alw<-alw[order(alw$FSEX,alw$AGE,alw$FLEN),]
       alw$FWT = alw$FWT / 1000
@@ -477,9 +492,9 @@ Reverting to ageBySex=FALSE"))
   }
   switch(requested, 
          "lengths" = calcLengths( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, 
-                                  dfSpp, towDist, bySex),
+                                  dfSpp, towDist, bySex, useBins),
          "ageKey" = calcAgeKey(agelen, dfSpp, lengthsTotals, lset, dfStrata, 
-                               bySex, output, ageBySex)
+                               bySex, output, ageBySex, useBins)
   )
 }
 

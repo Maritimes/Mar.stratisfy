@@ -88,6 +88,8 @@
 #' \code{FALSE} so that the original results are emulated.  However, setting 
 #' this to \code{TRUE} (when \code{bySex=TRUE}), will show age results broken 
 #' down by sex.  Setting this to \code{''} will result in a pick list.
+#' @param useBins The default value is \code{TRUE}. Should data be binned using the length groups 
+#' from GSPEC?
 #' @param output  The default value is \code{'new'}.  This determines the format 
 #' of the output Excel file. Setting this to \code{'classic'} will emulate the
 #' original APL stratisfy results, including overriding your parameter for 
@@ -140,6 +142,7 @@ stratisfy<-function(usepkg = 'rodbc',
                     spp = NULL,
                     bySex = NULL,
                     ageBySex = FALSE,
+                    useBins=T,
                     output = "new",
                     alkTable = NULL,
                     file_id = NULL,
@@ -177,9 +180,12 @@ stratisfy<-function(usepkg = 'rodbc',
   dfSpp = spp[[2]]
   ageBySex = spp[[3]]
   rm(spp)
-  dfRawCatch <<- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
-  dfRawInf <<- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
-  dfRawDet <<- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn)
+  dfRawCatch <- extractData('catch', agency=agency, dfSpp=dfSpp, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, oracle_cxn = oracle_cxn)
+  dfRawInf <- extractData('inf', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, type=type, oracle_cxn = oracle_cxn)
+  dfRawDet <- extractData('det', agency=agency, missions=dfMissions, strata = dfStrata$STRAT, areas = areas, dfSpp = dfSpp, bySex = bySex, type=type, oracle_cxn = oracle_cxn, useBins = useBins)
+  if (nrow(dfRawDet)>0 & !useBins){
+    dfRawDet$BINWIDTH = 1
+  }
   #if (all(nchar(dfRawInf[,"STRAT"])>3))dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
   if (all(nchar(dfRawInf[,"STRAT"]) ==4)) dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
   if (!is.null(alkTable))  {
@@ -195,7 +201,7 @@ stratisfy<-function(usepkg = 'rodbc',
   colnames(allStrat)<-"STRAT"
   lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
                            dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
-                           towDist=towDist, bySex = bySex)
+                           towDist=towDist, bySex = bySex, useBins=useBins)
   agelen<-lengthsData$agelen
   lengthsTotals<-lengthsData$length_total
   lset = lengthsData$lset

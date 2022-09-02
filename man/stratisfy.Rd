@@ -19,6 +19,7 @@ stratisfy(
   spp = NULL,
   bySex = NULL,
   ageBySex = FALSE,
+  useBins = T,
   output = "new",
   alkTable = NULL,
   file_id = NULL,
@@ -88,6 +89,9 @@ analyses being done by sex.  The default value of this parameter is
 \code{FALSE} so that the original results are emulated.  However, setting 
 this to \code{TRUE} (when \code{bySex=TRUE}), will show age results broken 
 down by sex.  Setting this to \code{''} will result in a pick list.}
+
+\item{useBins}{The default value is \code{TRUE}. Should data be binned using the length groups 
+from GSPEC?}
 
 \item{output}{The default value is \code{'new'}.  This determines the format 
 of the output Excel file. Setting this to \code{'classic'} will emulate the
