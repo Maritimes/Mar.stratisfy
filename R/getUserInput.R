@@ -41,7 +41,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
                         strataTable = NULL, year = NULL, season = NULL, 
                         wingspread = NULL, towDist = NULL, spp = NULL, 
                         bySex = NULL, strata = NULL, areas = NULL, 
-                        dfMissionsStrata = NULL, ageBySex = NULL, 
+                        dfMissionsStrata = NULL, ageBySex = NULL, confirmMissions = TRUE,
                         missions = NULL, oracle_cxn =NULL){
   getAgency<-function(agency){
     if (!is.null(agency)){
@@ -269,9 +269,14 @@ Please make a selection from the available options, or check your parameters\n**
       cat(paste0("\n Defaulting to ",missionPick," - the only  mission matching your criteria\n")) 
     }
     while(any(is.na(missionPick))){
-      missionPick <- utils::select.list(availMissions[,1],preselect=availMissions[,1],
+      if(confirmMissions){
+              missionPick <- utils::select.list(availMissions[,1],preselect=availMissions[,1],
                                         multiple=T, graphics=T, 
                                         title='Mission?')
+      }else{
+        missionPick <- availMissions[,1]
+      }
+
       if (length(missionPick)==0) {
         cat("You must select a mission")
         missionPick<-NA
@@ -378,7 +383,7 @@ Please make a selection from the available options, or check your parameters\n**
                         )
                         WHERE cnt >0 ORDER BY CNT DESC") 
     availStrataTables<-oracle_cxn$thecmd(oracle_cxn$channel, strataTableSql)
-    
+
     if (NROW(availStrataTables)==0){
       stop("\n\n!!!ABORTING!!!\nNo Strata Tables meet your criteria")
     } else if (NROW(availStrataTables)==1){

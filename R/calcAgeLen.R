@@ -42,11 +42,11 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     }
     #remove records without weight or totalno
     agelen <- dfNWSets
-    agelen <- merge(agelen, dfRawDet, by=c("MISSION", "SETNO","SIZE_CLASS"), all.x=T) 
-    agelen <- merge(agelen, dfRawInf[,c("MISSION", "SETNO", "STRAT",
+    agelen <- merge(agelen, dfRawDet, by=c("MISSION", "SETNO","SIZE_CLASS"), all.x=T)
+    agelen <- merge(unique(agelen), dfRawInf[,c("MISSION", "SETNO", "STRAT",
                                         "DIST","DMIN","DMAX","DEPTH","TIME")], 
                     by=c("MISSION", "SETNO", "STRAT"), all.x=T) 
-    
+
     if (nrow(agelen[is.na(agelen$BINWIDTH),])>0){
       if (useBins){
         agelen[is.na(agelen$BINWIDTH),]$BINWIDTH <- as.numeric(sppLgrp) 
@@ -54,7 +54,6 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
         agelen[is.na(agelen$BINWIDTH),]$BINWIDTH <- 1
       }
     } 
-      
     if (nrow( agelen[is.na(agelen$FLEN),])>0) agelen[is.na(agelen$FLEN),]$FLEN <- 0
     agelen$FLEN<-floor(agelen$FLEN/agelen$BINWIDTH)*agelen$BINWIDTH 
     agelen$CAGE<-NA
@@ -76,10 +75,12 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
           (towDist/agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$DIST)*
           agelen[which(agelen$SAMPWGT!=0 | !is.na(agelen$SAMPWGT)),]$CLEN
       }
-      #if sampwgt ==0, cage ==0
+
+# _RAW ----------------------------------------------------------------------------------------
+
+
       if (nrow(agelen[!is.na(agelen$SAMPWGT) & agelen$SAMPWGT==0,])>0) 
         agelen[!is.na(agelen$SAMPWGT) & agelen$SAMPWGT==0,]$CAGE <-0
-      #if sampwgt is na/null, cage is na/null
       if(nrow(agelen[is.na(agelen$SAMPWGT),])>0)
         agelen[is.na(agelen$SAMPWGT),]$CAGE<- NA
       if(nrow(agelen[which(agelen$CAGE == 0 & agelen$TOTNO !=0),])>0) 
@@ -90,18 +91,17 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       agelen$CAGE<-agelen$CLEN
     }
     agelen$FLEN<-agelen$FLEN+(agelen$BINWIDTH*.5)-.5
-    
     if (bySex) {
       allfields <-c("STRAT","MISSION","SETNO", "FSEX", "FLEN","CAGE") 
     }else{
       allfields <-c("STRAT","MISSION","SETNO","FLEN","CAGE")
     }
-    
     lset=agelen[,allfields]
     lset <- stats::aggregate(lset[,allfields]$CAGE,
                              lset[allfields !="CAGE"],
                              FUN=sum)
     lset <- lset[order(lset$STRAT,lset$MISSION,lset$SETNO),]
+
     #get lset data with all possible length groups for all sexes
     rng = range(lset[lset$x>0,"FLEN"], na.rm = T)
     allLength = seq(min(rng),max(rng), by=sppLgrp)
@@ -126,14 +126,13 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
     }
     #remove the evidence of the fakeRows
     length_by_set = length_by_set[length_by_set$STRAT!="FAKE",]
-    
+
     #ensure all strata and sets still present so their zeroes get included
     length_by_set=merge(dfNWSets[,c("MISSION", "STRAT", "SETNO")],length_by_set, 
                         all.x=T)
     length_by_set=length_by_set[order(length_by_set$STRAT,
                                       length_by_set$MISSION,
                                       length_by_set$SETNO),]
-    
     #Reorder the columns so that they go by sex, then every possible length
     length_by_set_id = length_by_set[c("STRAT","MISSION","SETNO")]
     length_by_set_dat = length_by_set[!colnames(length_by_set) %in% c("STRAT","MISSION","SETNO")]
@@ -254,7 +253,7 @@ Reverting to ageBySex=FALSE"))
     # alk<-cbind(alk,"TOTAL"=rowSums(alk)) 
     # alk<-rbind(alk, "TOTAL"=colSums(alk))
     # Age Length Weight ------------------------------------------------------
-    
+
     if (bySex){
       alw<-  stats::aggregate(FWT~AGE+FLEN+FSEX,data=agelen,FUN=mean)
       fakeAgeRows = expand.grid(AGE = all.ages, FLEN=-1, FWT = -1, FSEX = unique(agelen[!is.na(agelen$FSEX),"FSEX"]))
@@ -285,7 +284,6 @@ Reverting to ageBySex=FALSE"))
     alw$FLEN<-NULL
     alw<-alw[order(rownames(alw)),]
     alw[is.na(alw)]<-0
-    
     # Age Table --------------------------------------------------------------    
     alk_ap<-as.data.frame(alk)
     alk_ap$TOTAL<-NULL
@@ -323,12 +321,14 @@ Reverting to ageBySex=FALSE"))
       lengths = lengths[lengths>0]
       lengths<-as.data.frame(lengths)
     }
+
     ages_prop_l<-merge(ages_prop,lengths, by="row.names")
     rownames(ages_prop_l)<-ages_prop_l$Row.names
     ages_prop_l$Row.names<-NULL
     ages_prop_l[, -which(names(ages_prop_l) == "lengths")]<-ages_prop_l[, -which(names(ages_prop_l) == "lengths")] * ages_prop_l[["lengths"]]
     age_table<-ages_prop_l[, -which(names(ages_prop_l) == "lengths")]
     age_table[is.na(age_table)]<-0
+
     # Age by Set -------------------------------------------------------------  
     if (bySex){
       colNs=c("FSEX", "FLEN")
@@ -356,6 +356,7 @@ Reverting to ageBySex=FALSE"))
       age_by_set<-age_by_set[order(age_by_set$FSEX, age_by_set$STRAT,age_by_set$SETNO),]
       
     }else{
+      
       ages_prop$FLEN<-as.numeric(rownames(ages_prop))
       ageset<-lset[lset$STRAT!="FAKE",]
       colnames(ageset)[which(names(ageset) == "x")] <- "CAGE"
@@ -365,12 +366,12 @@ Reverting to ageBySex=FALSE"))
       theseages<-names(alk_ap)
       ages_pre[, (theseages) := lapply(.SD,function(x) x * ages_pre[['CAGE']] ), 
                .SDcols = theseages]
+
       age_by_set<-stats::aggregate(.~STRAT + MISSION + SETNO, data=ages_pre, sum)
       age_by_set=merge(setID,age_by_set[,-which(names(age_by_set) %in% c("FLEN","CAGE"))], all.x=TRUE)
       age_by_set[is.na(age_by_set)]<-0
       age_by_set<-age_by_set[order(age_by_set$STRAT,age_by_set$SETNO),]
     }
-    
     if (ageBySex == FALSE | output=="classic"){
       age_by_set$FSEX<-NULL
       age_by_set<-stats::aggregate(.~STRAT + MISSION + SETNO, data=age_by_set, sum)
@@ -387,6 +388,8 @@ Reverting to ageBySex=FALSE"))
     age_by_set$UNKNOWN = round(age_by_set$x- age_by_set$preTOTAL,6)
     age_by_set$preTOTAL<-NULL
     age_by_set$x<-NULL
+    
+
     # Age Mean ---------------------------------------------------------------  
     age_o<-age_by_set
     allSets<-unique(agelen[,c("MISSION", "STRAT","SETNO")])
@@ -411,7 +414,6 @@ Reverting to ageBySex=FALSE"))
       }
       age_mean<-age_mean_all
     }
-    
     age_mean$TUNITS<-NULL
     age_mean[is.na(age_mean)]<-0
     

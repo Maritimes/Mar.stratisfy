@@ -23,6 +23,7 @@ stratisfy(
   output = "new",
   alkTable = NULL,
   file_id = NULL,
+  confirmMissions = TRUE,
   fn.oracle.username = "_none_",
   fn.oracle.password = "_none_",
   fn.oracle.dsn = "_none_"
@@ -104,6 +105,10 @@ allows you to add additional values for the age length key.}
 
 \item{file_id}{This is a modifier you can have appended to the output 
 filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}}
+
+\item{confirmMissions}{The default is \code{TRUE}.  If TRUE, the script will pause and have the 
+user verify that the identified missions are the ones which are desired.  If FALSE, the 
+auto-found missions will be used directly.}
 
 \item{fn.oracle.username}{default is \code{'_none_'} This is your username for
 accessing oracle objects. If you have a value for this stored in your

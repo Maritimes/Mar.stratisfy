@@ -28,7 +28,6 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
     str_dfNWSets<-str_dfNWSets[order(str_dfNWSets$STRAT,str_dfNWSets$SETNO),]
     #drop things that are already in inf (except for join conveniences)
     str_dfNWSets <- str_dfNWSets[c('MISSION','SETNO','STRAT',setdiff(colnames(str_dfNWSets), colnames(dfRawInf)))]
-    
     names(str_dfNWSets)[names(str_dfNWSets) == "AREA"] <- "UNIT_AREA"
     return(str_dfNWSets)
   }
@@ -37,6 +36,7 @@ calcNumsWeights<-function(requested = NULL, dfRawCatch = NULL, dfRawInf = NULL,
     tmp <- merge(dfNWSets,dfStrata, by = 'STRAT')
     tmp$BIOMASS<-tmp$TOTWGT*tmp$TUNITS
     tmp$ABUND<-tmp$TOTNO*tmp$TUNITS
+    # browser()
     tmp.cnt<-stats::aggregate(list(COUNT=tmp$STRAT),
                               by=list(STRAT=tmp$STRAT),
                               FUN=length)

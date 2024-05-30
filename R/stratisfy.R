@@ -99,6 +99,9 @@
 #' allows you to add additional values for the age length key.
 #' @param file_id This is a modifier you can have appended to the output 
 #' filename.  The resultant file will be called \code{'Mar_stratisfy<_file_id>.xlsx'}
+#' @param confirmMissions  The default is \code{TRUE}.  If TRUE, the script will pause and have the 
+#' user verify that the identified missions are the ones which are desired.  If FALSE, the 
+#' auto-found missions will be used directly. 
 #' @param fn.oracle.username default is \code{'_none_'} This is your username for
 #' accessing oracle objects. If you have a value for this stored in your
 #' environment (e.g. from an rprofile file), this can be left and that value will
@@ -146,6 +149,7 @@ stratisfy<-function(usepkg = 'rodbc',
                     output = "new",
                     alkTable = NULL,
                     file_id = NULL,
+                    confirmMissions = TRUE,
                     fn.oracle.username ="_none_",
                     fn.oracle.password="_none_",
                     fn.oracle.dsn="_none_"
@@ -156,12 +160,12 @@ stratisfy<-function(usepkg = 'rodbc',
   agency = getUserInput("agency",agency=agency)
   type = getUserInput("type", agency=agency, type=type, oracle_cxn = oracle_cxn)
   missionsAndStrata = getUserInput("missionsAndStrata", agency=agency,type=type, 
-                                   year=year, season=season, missions=missions,
+                                   year=year, season=season, missions=missions, confirmMissions=confirmMissions,
                                    oracle_cxn = oracle_cxn)
   dfMissions = missionsAndStrata[[1]]
   dfMissionsStrata = missionsAndStrata[[2]]
   rm(missionsAndStrata)
-
+  
   strataTable = getUserInput("strataTable", strataTable=strataTable, 
                              dfMissionsStrata=dfMissionsStrata, 
                              oracle_cxn = oracle_cxn)
@@ -186,7 +190,7 @@ stratisfy<-function(usepkg = 'rodbc',
   if (nrow(dfRawDet)>0 & !useBins){
     dfRawDet$BINWIDTH = 1
   }
-  #if (all(nchar(dfRawInf[,"STRAT"])>3))dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
+  
   if (all(nchar(dfRawInf[,"STRAT"]) ==4)) dfRawInf[,"STRAT"]<-paste0(0,dfRawInf[,"STRAT"])
   if (!is.null(alkTable))  {
     alkTable <-getAlkTable(alkTable)
@@ -199,6 +203,28 @@ stratisfy<-function(usepkg = 'rodbc',
                                               dfStrata=dfStrata, dfNWAgg=dfNWAgg), all.x=T)
   allStrat = as.data.frame(dfStrata[,"STRAT"])
   colnames(allStrat)<-"STRAT"
+  
+  # getCntByLen<-function(thisDfRawDet=dfRawDet,thisDfRawInf=dfRawInf, thisBySex=bySex, thisTowDist = towDist){
+  #   if (thisBySex) {
+  #     thefields <- c("MISSION", "SETNO", "FSEX", "FLEN", "CLEN")
+  #   }else{
+  #     theFields <- c("MISSION", "SETNO", "FLEN", "CLEN")
+  #   }
+  #   thisDfRawDet<- thisDfRawDet[,theFields]
+  #   thisDfRawDet <- thisDfRawDet %>%
+  #     group_by(across(all_of(theFields[!theFields %in% "CLEN"]))) %>%
+  #     summarise(CLEN = sum(CLEN), .groups = "keep")
+  #   thisDfRawDet <- merge(thisDfRawDet,
+  #                         thisDfRawInf[,c("MISSION", "SETNO", "DIST")], by = c("MISSION", "SETNO"), all.x=T)
+  #   thisDfRawDet[is.na(thisDfRawDet$DIST),"DIST"]<-thisTowDist
+  #   colnames(thisDfRawDet)[colnames(thisDfRawDet)=="CLEN"] <- "CLEN_RAW"
+  #   thisDfRawDet$CLEN <- thisDfRawDet$CLEN_RAW*(thisTowDist/thisDfRawDet$DIST)
+  #   thisDfRawDet$CLEN_RAW<- NULL
+  #   return(thisDfRawDet)
+  # }
+  # cntByLen <<- getCntByLen()
+
+  # dfRawDet
   lengthsData <-calcAgeLen('lengths', agency = agency, dfNWSets=dfNWSets, dfRawDet=dfRawDet, 
                            dfRawInf=dfRawInf, dfStrata=dfStrata, dfSpp=dfSpp, 
                            towDist=towDist, bySex = bySex, useBins=useBins)
@@ -264,15 +290,15 @@ stratisfy<-function(usepkg = 'rodbc',
   
   
   
-
+  
   weight_by_set = merge(dfRawInf[,c("STRAT","MISSION","SETNO")], dfNWSets[,c("STRAT","MISSION","SETNO", "SLAT","SLONG","UNIT_AREA","TOTWGT")], all.x=TRUE)
   
   if (class(ageLengthKey) == "list"){
-
-     ageLengthKey$age_total$TOTAL = rowSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)
-     ageLengthKey$age_total = rbind(ageLengthKey$age_total,c("TOTAL",colSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)))
-     ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)] <- sapply(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],as.numeric)
-     
+    
+    ageLengthKey$age_total$TOTAL = rowSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)
+    ageLengthKey$age_total = rbind(ageLengthKey$age_total,c("TOTAL",colSums(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],na.rm = T)))
+    ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)] <- sapply(ageLengthKey$age_total[,2:ncol(ageLengthKey$age_total)],as.numeric)
+    
     ageLengthKey$age_table$LENGTHS <- row.names(ageLengthKey$age_table)
     ageLengthKey$age_table<-ageLengthKey$age_table[,c(ncol(ageLengthKey$age_table),1:ncol(ageLengthKey$age_table)-1)]
     ageLengthKey$age_table = data.frame(apply(ageLengthKey$age_table, 2, function(x) as.numeric(as.character(x))))
@@ -281,7 +307,7 @@ stratisfy<-function(usepkg = 'rodbc',
     ageLengthKey$alw$LENGTHS <- row.names(ageLengthKey$alw)
     ageLengthKey$alw<-ageLengthKey$alw[,c(ncol(ageLengthKey$alw),1:ncol(ageLengthKey$alw)-1)]
     #ageLengthKey$alw<-rbind(ageLengthKey$alw,c("CRAP3?",colSums(ageLengthKey$alw[,2:ncol(ageLengthKey$alw)],na.rm = T)) )
-
+    
     ageLengthKey$alk = data.frame(apply(ageLengthKey$alk, 2, function(x) as.numeric(as.character(x))))
     ageLengthKey$alk$TOTAL = rowSums(ageLengthKey$alk[,2:ncol(ageLengthKey$alk)],na.rm = T)
     ageLengthKey$alk = rbind(ageLengthKey$alk,c("TOTAL",colSums(ageLengthKey$alk[,2:ncol(ageLengthKey$alk)],na.rm = T)))
@@ -294,12 +320,12 @@ stratisfy<-function(usepkg = 'rodbc',
     ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)] <- sapply(ageLengthKey$age_mean[,2:ncol(ageLengthKey$age_mean)],as.numeric)
     
     ageLengthKey$age_mean_se  = cbind(ageLengthKey$age_mean_se,TOTAL = rowSums(ageLengthKey$age_mean_se[,-which(colnames(ageLengthKey$age_mean_se) %in% c("STRAT"))],na.rm = T))
-   # ageLengthKey$age_mean_se = rbind(ageLengthKey$age_mean_se,c("CRAP7?",colSums(ageLengthKey$age_mean_se[,2:ncol(ageLengthKey$age_mean_se)],na.rm = T)))
-
-   # ageLengthKey$age_total_se$TOTAL = rowSums(ageLengthKey$age_total_se[,-which(colnames(ageLengthKey$age_total_se) %in% c("STRAT"))],na.rm = T)
+    # ageLengthKey$age_mean_se = rbind(ageLengthKey$age_mean_se,c("CRAP7?",colSums(ageLengthKey$age_mean_se[,2:ncol(ageLengthKey$age_mean_se)],na.rm = T)))
+    
+    # ageLengthKey$age_total_se$TOTAL = rowSums(ageLengthKey$age_total_se[,-which(colnames(ageLengthKey$age_total_se) %in% c("STRAT"))],na.rm = T)
     ageLengthKey$age_total_se = rbind(ageLengthKey$age_total_se,c("TOTAL",colSums(ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)],na.rm = T)))
     ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)] <- sapply(ageLengthKey$age_total_se[,2:ncol(ageLengthKey$age_total_se)],as.numeric)
-}
+  }
   #Add the totals to Strata for approp columns
   dfStrataDataCols =c("SQNM","TUNITS","AREAPROP","AREAPROPSTERR","AREATOT","AREATOTSTERR")
   dfStrataDataTots = colSums(dfStrata[,dfStrataDataCols],na.rm = TRUE)

@@ -76,47 +76,59 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
           ORDER BY i.mission, i.setno", sep="")
     }else if (agency=="NMFS"){
       #distance was assumed to be 1.75, but appears to be dopdistb
+      # sql<-
+      #   paste("SELECT CRUISE6 mission,to_number(station) setno, begin_est_towdate sdate, est_time time, STRATUM strat, 
+      #     area unit_area,  BEGLAT slat, BEGLON slong, mindepth dmin, maxdepth dmax, avgdepth depth, towdur dur, dopdistb dist 
+      #     FROM USNEFSC.USS_STATION I
+      #     WHERE 
+      #     ",areaTweak,"
+      #     CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND
+      #     STRATUM IN (",Mar.utils::SQL_in(strata),") AND
+      #     to_number(SHG) <= ",type," 
+      #     ORDER BY CRUISE6,to_number(station)", sep="")
       sql<-
-        paste("SELECT CRUISE6 mission,to_number(station) setno, begin_est_towdate sdate, est_time time, STRATUM strat, 
-          area unit_area,  BEGLAT slat, BEGLON slong, mindepth dmin, maxdepth dmax, avgdepth depth, towdur dur, dopdistb dist 
-          FROM USNEFSC.USS_STATION I
-          WHERE 
-          ",areaTweak,"
-          CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND
-          STRATUM IN (",Mar.utils::SQL_in(strata),") AND
-          to_number(SHG) <= ",type," 
-          ORDER BY CRUISE6,to_number(station)", sep="")
+        paste("SELECT I.CRUISE6 mission,to_number(I.station) setno, i.begin_est_towdate sdate, i.est_time time, i.STRATUM strat,
+              i.area unit_area, i.BEGLAT slat, i.BEGLON slong, i.mindepth dmin, i.maxdepth dmax, i.avgdepth depth, i.towdur dur, i.dopdistb dist, e.area_swept_wings_mean_km2 asw
+              FROM USNEFSC.USS_STATION i,
+              USNEFSC.USS_TOW_EVALUATION E
+              WHERE
+              I.CRUISE6=E.CRUISE6 AND
+              I.STATION=E.STATION AND
+              ",areaTweak,"
+              i.CRUISE6 IN (",Mar.utils::SQL_in(missions),") AND
+              i.STRATUM IN (",Mar.utils::SQL_in(strata),") AND
+              to_number(i.SHG) <= ",type,"
+              ORDER BY i.CRUISE6,to_number(i.station)", sep="")
     }
-
-    raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
-    #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
-   
-      raw.gsinf$SLAT = (as.numeric(substr(raw.gsinf$SLAT,1,2))+(raw.gsinf$SLAT - as.numeric(substr(raw.gsinf$SLAT,1,2))*100)/60)
-      raw.gsinf$SLONG = (as.numeric(substr(raw.gsinf$SLONG,1,2))+(raw.gsinf$SLONG - as.numeric(substr(raw.gsinf$SLONG,1,2))*100)/60)*-1
-   
-    return(raw.gsinf)
+  raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
+  #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
+  
+  raw.gsinf$SLAT = (as.numeric(substr(raw.gsinf$SLAT,1,2))+(raw.gsinf$SLAT - as.numeric(substr(raw.gsinf$SLAT,1,2))*100)/60)
+  raw.gsinf$SLONG = (as.numeric(substr(raw.gsinf$SLONG,1,2))+(raw.gsinf$SLONG - as.numeric(substr(raw.gsinf$SLONG,1,2))*100)/60)*-1
+  
+  return(raw.gsinf)
+}
+getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
+  spp=dfSpp$SPEC
+  sppLgrp = dfSpp$LGRP
+  #orig stratisfy is inconsistent with berried females:
+  # -if analysis is done by sex, berried females (fsex = 3) are ignored
+  # -if analysis is done not by sex, they are included
+  # The following block does this so that the results match, but it seems 
+  # like a bad idea
+  if(bySex){
+    sexFilt = " (d.FSEX IS NULL OR d.fsex IN (0,1,2)) AND "
+  }else{
+    sexFilt = ""
   }
-  getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
-    spp=dfSpp$SPEC
-    sppLgrp = dfSpp$LGRP
-    #orig stratisfy is inconsistent with berried females:
-    # -if analysis is done by sex, berried females (fsex = 3) are ignored
-    # -if analysis is done not by sex, they are included
-    # The following block does this so that the results match, but it seems 
-    # like a bad idea
-    if(bySex){
-      sexFilt = " (d.FSEX IS NULL OR d.fsex IN (0,1,2)) AND "
+  if (agency=='DFO'){
+    if (useBins){
+      binIt = paste("decode(",sppLgrp,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen")
     }else{
-      sexFilt = ""
+      binIt = "d.flen"
     }
-    if (agency=='DFO'){
-      if (useBins){
-        binIt = paste("decode(",sppLgrp,",1,d.flen,2,.5+2*floor(d.flen/2),3,1+3*floor(d.flen/3),flen) flen")
-      }else{
-        binIt = "d.flen"
-      }
-      # APL did NOT limit det results by strata, or type
-      sql<-paste("select d.mission,d.setno,d.size_class,
+    # APL did NOT limit det results by strata, or type
+    sql<-paste("select d.mission,d.setno,d.size_class,
       nvl(d.fsex,0) fsex,d.age, d.fwt,         
        ",binIt,",          
        s.lgrp binwidth,s.lfsexed bysex, d.clen          
@@ -134,31 +146,31 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
        ",sexFilt,"
        d.SPEC=",spp," 
        ORDER BY d.mission,d.setno", sep="")
-
-      raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
-      #since berried and normal females get combined, add the CLEN for sets
-      # raw.gsdet = 
-      #   stats::aggregate(list(CLEN = raw.gsdet$CLEN),
-      #             by = list(MISSION=raw.gsdet$MISSION,
-      #                       SETNO =raw.gsdet$SETNO,
-      #                       SIZE_CLASS =raw.gsdet$SIZE_CLASS,
-      #                       FSEX =raw.gsdet$FSEX,
-      #                       #AGE =raw.gsdet$AGE,
-      #                       #FWT =raw.gsdet$FWT,
-      #                       FLEN =raw.gsdet$FLEN,
-      #                       BINWIDTH =raw.gsdet$BINWIDTH,
-      #                       BYSEX =raw.gsdet$BYSEX
-      #                       ),
-      #             FUN = sum, na.rm=TRUE)
-      
-    }else if (agency=="NMFS"){
-      if (useBins){
-        binIt = paste("decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen")
-      }else{
-        binIt = "length flen"
-      }
-      #missing fsex, sizeclass,clen
-      sql1<- paste("select cruise6 mission, to_number(station) setno, length, 
+    
+    raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
+    #since berried and normal females get combined, add the CLEN for sets
+    # raw.gsdet = 
+    #   stats::aggregate(list(CLEN = raw.gsdet$CLEN),
+    #             by = list(MISSION=raw.gsdet$MISSION,
+    #                       SETNO =raw.gsdet$SETNO,
+    #                       SIZE_CLASS =raw.gsdet$SIZE_CLASS,
+    #                       FSEX =raw.gsdet$FSEX,
+    #                       #AGE =raw.gsdet$AGE,
+    #                       #FWT =raw.gsdet$FWT,
+    #                       FLEN =raw.gsdet$FLEN,
+    #                       BINWIDTH =raw.gsdet$BINWIDTH,
+    #                       BYSEX =raw.gsdet$BYSEX
+    #                       ),
+    #             FUN = sum, na.rm=TRUE)
+    
+  }else if (agency=="NMFS"){
+    if (useBins){
+      binIt = paste("decode(", sppLgrp,",1,length,2,.5+2*floor(length/2),3,1+3*floor(length/3),length) flen")
+    }else{
+      binIt = "length flen"
+    }
+    #missing fsex, sizeclass,clen
+    sql1<- paste("select cruise6 mission, to_number(station) setno, length, 
         age, avg(indwt) fwt,
         ",binIt,",
         ",sppLgrp," binwidth
@@ -169,9 +181,9 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
         STRATUM IN (",Mar.utils::SQL_in(strata),") 
         group by cruise6,station,age,length
         ORDER BY cruise6, to_number(station)", sep="")
-      raw.gsdet1<-oracle_cxn$thecmd(oracle_cxn$channel, sql1 )
-      
-      sql2<- paste("select cruise6 mission, catchsex fsex, to_number(station) setno,length, 
+    raw.gsdet1<-oracle_cxn$thecmd(oracle_cxn$channel, sql1 )
+    
+    sql2<- paste("select cruise6 mission, catchsex fsex, to_number(station) setno,length, 
         sum(expnumlen) clen, 1 size_class
         from usnefsc.uss_lengths
         where to_number(svspp)=",spp,"
@@ -179,17 +191,17 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
         and catchsex in ('0','1','2')
         group by cruise6,station,length, catchsex
         ORDER BY cruise6, to_number(station)",sep="")
-      
-      raw.gsdet2<-oracle_cxn$thecmd(oracle_cxn$channel, sql2 )
-      raw.gsdet<-merge(raw.gsdet1,raw.gsdet2, all.x=T) 
-      raw.gsdet$FLEN[is.na(raw.gsdet$FLEN)] <- raw.gsdet$LENGTH[is.na(raw.gsdet$FLEN)]
-    }
-    return(raw.gsdet)
+    
+    raw.gsdet2<-oracle_cxn$thecmd(oracle_cxn$channel, sql2 )
+    raw.gsdet<-merge(raw.gsdet1,raw.gsdet2, all.x=T) 
+    raw.gsdet$FLEN[is.na(raw.gsdet$FLEN)] <- raw.gsdet$LENGTH[is.na(raw.gsdet$FLEN)]
   }
-  
-  switch(requested, 
-         "catch" = getCatch(agency,dfSpp,missions, strata, areas), 
-         "inf" = getInf(agency, missions, strata, type, areas),
-         "det" = getDet(agency, missions, strata, dfSpp, bySex, type, areas, useBins)
-  )
+  return(raw.gsdet)
+}
+
+switch(requested, 
+       "catch" = getCatch(agency,dfSpp,missions, strata, areas), 
+       "inf" = getInf(agency, missions, strata, type, areas),
+       "det" = getDet(agency, missions, strata, dfSpp, bySex, type, areas, useBins)
+)
 }
