@@ -3,13 +3,14 @@
 # @param requested  The default value is \code{NULL}. This determines which 
 # analytic will be performed.
 # @param alkTable  The default value is \code{NULL}. 
-# @param oracle_cxn  The default value is \code{NULL}. 
+# @param cxn  The default value is \code{NULL}. 
 # @importFrom utils read.csv
 # @importFrom utils read.delim
 # @importFrom openxlsx read.xlsx
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
-getAlkTable<-function(alkTable=NULL, oracle_cxn = NULL){
+getAlkTable<-function(alkTable=NULL, cxn = NULL){
+  thecmd <- Mar.utils:::connectionCheck(cxn)
   custAlkTable<-NA
   
   fn<-basename(alkTable)
@@ -29,7 +30,7 @@ getAlkTable<-function(alkTable=NULL, oracle_cxn = NULL){
   }else{
     #not a valid file - maybe an oracle object?
     sql <- paste0("select * from ",alkTable)
-    custAlkTable<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
+    custAlkTable<-thecmd(cxn, sql)
     if (class(custAlkTable)=='character')return(NA)
     if (nrow(custAlkTable)<1)return(NA)
   }

@@ -16,6 +16,7 @@
 # @param output  The default value is \code{NULL}.
 # @param ageBySex  The default value is \code{NULL}.
 # @param useBins The default value is \code{TRUE}. Should data be binned using the length groups from GSPEC?
+# @param type  The default value is \code{NULL}.
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @importFrom Mar.utils st_err
@@ -32,9 +33,9 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
                      dfRawDet=NULL, dfRawInf = NULL, dfStrata = NULL, 
                      dfSpp=NULL, towDist=NULL,  bySex = NULL,
                      agelen = NULL, lengthsTotals = NULL, lset=NULL,
-                     output = NULL, ageBySex = NULL, useBins=T){
+                     output = NULL, ageBySex = NULL, useBins=T,type=NULL){
   calcLengths<-function( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, dfSpp, 
-                         towDist, bySex, useBins){
+                         towDist, bySex, useBins, type){
     if (useBins){
       sppLgrp = dfSpp$LGRP
     }else{
@@ -144,8 +145,21 @@ calcAgeLen<-function(requested = NULL, agency = NULL, dfNWSets = NULL,
       length_by_set_dat = length_by_set_dat[order(
         as.numeric(colnames(length_by_set_dat)))]
     }
-    
+
     length_by_set_dat[is.na(length_by_set_dat)]<-0
+    # if(dfSpp$SPEC == 4511 & type==1){
+    #   illexconvFactors <- data.frame(
+    #     CONV_FACTOR = c(0,0.1877, 0.1912, 0.1901, 0.1913, 0.2332, 0.2857, 0.3498, 0.4221, 0.5084, 0.5888, 0.6797, 0.7707, 0.8639, 0.956, 1.0528, 1.1414, 1.223, 1.2789, 1.3046, 1.307, 1.3081, 1.3058, 1.3082, 1.3082, 1.3071, 1.3059, 1.3071, 1.3048, 1.3048, 1.3048, 1.3048),
+    #     LENGTH =       round(c(0,3.0055, 4.0041, 4.9926, 6.0014, 6.9999, 8.0085, 9.007, 10.0054, 11.0037, 12.0021, 13.0004, 14.0089, 15.0073, 16.0056, 17.0039, 18.0022, 19.0006, 19.999, 21.0078, 21.9962, 22.9949, 24.0037, 25.0023, 26.001, 27.0098, 27.9983, 28.9969, 29.9956, 31, 43, 91),0)
+    #   )
+    # for(i in names(length_by_set_dat)){
+    #   # Find the corresponding CONV_FACTOR in df2
+    #   conv_factor <- illexconvFactors$CONV_FACTOR[illexconvFactors$LENGTH == i]
+    #   
+    #   # Multiply the column in df1 by the CONV_FACTOR
+    #   length_by_set_dat[,as.character(i)] <- length_by_set_dat[,as.character(i)] / conv_factor
+    # }
+    # }
     length_by_set_dat = cbind(length_by_set_dat, TOTAL=rowSums(length_by_set_dat))
     length_by_set = cbind(length_by_set_id,length_by_set_dat)
     length_by_strat_mean<-stats::setNames(stats::aggregate(list(
@@ -381,7 +395,8 @@ Reverting to ageBySex=FALSE"))
       age_by_set<-age_by_set[order(age_by_set$FSEX, age_by_set$STRAT,age_by_set$SETNO),]
     }
     # add unknown to age_by_set for use in several future tables
-    row.names(age_by_set)<-age_by_set$SETNO
+    row.names(age_by_set)<-paste0(age_by_set$MISSION,"_",age_by_set$SETNO)
+
     age_by_set = cbind(age_by_set,preTOTAL = rowSums(age_by_set[,-which(colnames(age_by_set) %in% c("SETNO","STRAT","MISSION"))], na.rm=TRUE))
     unknCheck = aggregate(lset[,c("x")], by=list(SETNO = lset$SETNO),FUN="sum")
     age_by_set = merge(age_by_set,unknCheck)
@@ -494,7 +509,7 @@ Reverting to ageBySex=FALSE"))
   }
   switch(requested, 
          "lengths" = calcLengths( agency, dfNWSets,dfRawDet, dfRawInf, dfStrata, 
-                                  dfSpp, towDist, bySex, useBins),
+                                  dfSpp, towDist, bySex, useBins,type),
          "ageKey" = calcAgeKey(agelen, dfSpp, lengthsTotals, lset, dfStrata, 
                                bySex, output, ageBySex, useBins)
   )

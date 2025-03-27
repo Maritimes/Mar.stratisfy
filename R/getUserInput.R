@@ -32,6 +32,12 @@
 # \code{NULL} will result in a pick list.
 # @param ageBySex   The default value is \code{NULL}.  Setting to 
 # \code{NULL} will result in a pick list.
+# @param confirmMissions
+# @param missions
+# @param cxn A valid Oracle connection object. This parameter allows you to 
+# pass an existing connection, reducing the need to establish a new connection 
+# within the function. If provided, it takes precedence over the connection-
+# related parameters.
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 # @importFrom utils select.list
@@ -42,7 +48,9 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
                         wingspread = NULL, towDist = NULL, spp = NULL, 
                         bySex = NULL, strata = NULL, areas = NULL, 
                         dfMissionsStrata = NULL, ageBySex = NULL, confirmMissions = TRUE,
-                        missions = NULL, oracle_cxn =NULL){
+                        missions = NULL, cxn = NULL){
+  thecmd <- Mar.utils:::connectionCheck(cxn)
+  
   getAgency<-function(agency){
     if (!is.null(agency)){
       agency<-toupper(agency)
@@ -54,7 +62,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
     return(choice)
   }
   
-  getType<-function(agency, type, oracle_cxn){
+  getType<-function(agency, type, cxn){
     if (agency == "NMFS"){
       if (type %in% c(1,5))type<-NULL
       if (!is.null(type)){
@@ -86,7 +94,7 @@ Please enter the survey type:"))
       typePick <-NA
       while(is.na(typePick)){
         
-        choice <- oracle_cxn$thecmd(oracle_cxn$channel, paste("select XTYPEDESC, XTYPE
+        choice <- thecmd(cxn, , paste("select XTYPEDESC, XTYPE
                                              from groundfish.GSXTYPE
                                               WHERE XTYPE IN (1,5)
                                              ORDER BY XTYPE",sep=""))
@@ -102,7 +110,7 @@ Please enter the survey type:"))
     }
   }
   
-  getMissionsAndStrata<-function(agency, type, year, season, missions, oracle_cxn){
+  getMissionsAndStrata<-function(agency, type, year, season, missions, cxn){
     if (is.null(missions)){
     availSeasons = switch(agency,
                           "DFO" = c("SPRING","SUMMER", "FALL"),
@@ -188,7 +196,7 @@ Please enter the survey type:"))
 
     
     cat("\n Checking years matching your criteria...\n")
-    availYears = oracle_cxn$thecmd(oracle_cxn$channel, year.query)
+    availYears = thecmd(cxn, , year.query)
     availYears = as.character(availYears[order(availYears$YEAR),1])
     
     yearpick <-NA
@@ -251,7 +259,7 @@ Please enter the survey type:"))
                              ORDER BY S.CRUISE6")
     }
     cat("\n Looking for Missions meeting your criteria...\n")
-    availMissions = oracle_cxn$thecmd(oracle_cxn$channel, mission.query)
+    availMissions = thecmd(cxn, , mission.query)
     if (NROW(availMissions)==0) stop("\n\n!!!ABORTING!!!\nNo Missions can be found where the requested Experiment Type and Season can be found")
     missionPick <-NA
     if (!is.null(missions)) {
@@ -291,14 +299,14 @@ Please make a selection from the available options, or check your parameters\n**
     } else if (agency == "NMFS"){
       sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE SHG <= ",type," AND CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") AND STRATUM IS NOT NULL ORDER BY STRATUM")
     }
-    availStrata = oracle_cxn$thecmd(oracle_cxn$channel,  sql1)
+    availStrata = thecmd(cxn, ,  sql1)
     # #2) AREAS
     # f (agency == "DFO"){
     #   sql2 = paste0("SELECT DISTINCT AREA FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
     # } else if (agency == "NMFS"){
     #   sql2 = paste0("SELECT DISTINCT AREA FROM USNEFSC.USS_STATION WHERE CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
     # }
-    # availArea = oracle_cxn$thecmd(oracle_cxn$channel,  sql2)
+    # availArea = thecmd(cxn, ,  sql2)
     
     res = list(missionPick, availStrata)
     return(res)
@@ -346,7 +354,7 @@ Please make a selection from the available options, or check your parameters\n**
     return(towDistPick)
   }
   
-  getStrataTable<-function(strataTable, dfMissionsStrata,oracle_cxn){
+  getStrataTable<-function(strataTable, dfMissionsStrata,cxn){
     quickStrataTables<- c("GROUNDFISH.GSSTRATUM","USNEFSC.DFO5ZJM",
                           "USNEFSC.DFO5ZGHNO","USNEFSC.NMFS5ZJM",
                           "USNEFSC.NMFS5ZGHNO","USNEFSC.NMFS5ZJMC",
@@ -382,7 +390,7 @@ Please make a selection from the available options, or check your parameters\n**
                         SELECT 'USNEFSC.NMFS5ZU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZU WHERE STRAT IN (",stratList_n,")
                         )
                         WHERE cnt >0 ORDER BY CNT DESC") 
-    availStrataTables<-oracle_cxn$thecmd(oracle_cxn$channel, strataTableSql)
+    availStrataTables<-thecmd(cxn, , strataTableSql)
 
     if (NROW(availStrataTables)==0){
       stop("\n\n!!!ABORTING!!!\nNo Strata Tables meet your criteria")
@@ -400,7 +408,7 @@ Please make a selection from the available options, or check your parameters\n**
     return(strataTablePick)
   }
   
-  getSpp<-function(agency, spp, bySex, ageBySex, oracle_cxn){
+  getSpp<-function(agency, spp, bySex, ageBySex, cxn){
     bySexChoice<-NA
     ageBySexChoice<-NA
     sppChoice<-NA
@@ -509,7 +517,7 @@ combining sexes in age results\n")
     
     
     
-    availSpp = oracle_cxn$thecmd(oracle_cxn$channel, species.query)
+    availSpp = thecmd(cxn, , species.query)
     if (!is.null(spp)){
       if (spp %in% availSpp$SPEC){
         sppChoice <- spp
@@ -535,7 +543,7 @@ sex option.  Please select one from the list.\n")
     return(res)
   }
   
-  getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata, oracle_cxn){
+  getStrata<-function(agency, strataTable, strata, towDist, wingspread, dfMissionsStrata, cxn){
     strataPick<-NA
     addZ<-F
     if (!is.null(strata)) strataPick <-strata
@@ -550,7 +558,7 @@ sex option.  Please select one from the list.\n")
       print("\nWeird strata encountered please report your selections to Mike.McMahon@dfo-mpo.gc.ca")
     }
     sql = paste0("SELECT * FROM ",strataTable, " WHERE 1=1 ", strata.tweak, " ORDER BY STRAT")
-    availStrat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
+    availStrat<-thecmd(cxn, , sql)
     while(all(!strataPick %in% availStrat$STRAT)){
       strataPick <- utils::select.list(as.character(availStrat$STRAT),
                                        multiple=T, graphics=T, preselect = strata.preselect,
@@ -568,13 +576,13 @@ sex option.  Please select one from the list.\n")
           WHERE 
           strat IN (",Mar.utils::SQL_in(dfStrata[,1]),")
            ORDER BY strat", sep="")
-    dfStrata.det<-oracle_cxn$thecmd(oracle_cxn$channel, sql2)
+    dfStrata.det<-thecmd(cxn, , sql2)
     if (addZ) dfStrata.det[,"STRAT"]<-paste0(0,dfStrata.det[,"STRAT"])
     dfStrata.det= merge(dfStrata, dfStrata.det)
     dfStrata.det<-dfStrata.det[order(dfStrata.det$STRAT),] 
     return(dfStrata.det)
   }
-  getAreas<-function(agency, missions, strata, areas, oracle_cxn){
+  getAreas<-function(agency, missions, strata, areas, cxn){
     areasPick<-NA
     if (agency =="DFO"){
       sql <- paste0(
@@ -597,7 +605,7 @@ sex option.  Please select one from the list.\n")
       ORDER BY AREA"
       )
     }
-    availAreas<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
+    availAreas<-thecmd(cxn, , sql)
     if (is.null(areas) & nrow(availAreas)>0){
       while(all(!areasPick %in% availAreas$AREA)){
         areasPick <- utils::select.list(as.character(availAreas$AREA),
@@ -614,14 +622,14 @@ sex option.  Please select one from the list.\n")
   }
   switch(requested, 
          "agency" = getAgency(agency), 
-         "type" = getType(agency, type, oracle_cxn),
-         "spp" = getSpp(agency, spp, bySex, ageBySex, oracle_cxn),
+         "type" = getType(agency, type, cxn),
+         "spp" = getSpp(agency, spp, bySex, ageBySex, cxn),
          "missionsAndStrata" = getMissionsAndStrata(agency, type, year, season, 
-                                                    missions, oracle_cxn),
-         "strataTable" = getStrataTable(strataTable, dfMissionsStrata, oracle_cxn),
+                                                    missions, cxn),
+         "strataTable" = getStrataTable(strataTable, dfMissionsStrata, cxn),
          "strata" = getStrata(agency, strataTable, strata, towDist, wingspread, 
-                              dfMissionsStrata, oracle_cxn),
-         "areas" = getAreas(agency, missions, strata, areas, oracle_cxn),
+                              dfMissionsStrata, cxn),
+         "areas" = getAreas(agency, missions, strata, areas, cxn),
          "wingspread" = getWingspread(agency,wingspread),
          "towDist" = getTowDist(towDist)
   )

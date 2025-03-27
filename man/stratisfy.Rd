@@ -5,7 +5,7 @@
 \title{stratisfy}
 \usage{
 stratisfy(
-  usepkg = "rodbc",
+  cxn,
   agency = "DFO",
   type = 1,
   year = NULL,
@@ -19,7 +19,7 @@ stratisfy(
   spp = NULL,
   bySex = NULL,
   ageBySex = FALSE,
-  useBins = T,
+  useBins = TRUE,
   output = "new",
   alkTable = NULL,
   file_id = NULL,
@@ -30,8 +30,10 @@ stratisfy(
 )
 }
 \arguments{
-\item{usepkg}{The default value is \code{'rodbc'}, but \code{'roracle'} 
-works as well. This describes the R package you use to connect to Oracle.}
+\item{cxn}{A valid Oracle connection object. This parameter allows you to 
+pass an existing connection, reducing the need to establish a new connection 
+within the function. If provided, it takes precedence over the connection-
+related parameters.}
 
 \item{agency}{The default value is \code{'DFO'}, the other option is 
 \code{'NMFS'}.  Setting to \code{NULL} will result in a pick list.}
@@ -114,19 +116,23 @@ auto-found missions will be used directly.}
 accessing oracle objects. If you have a value for this stored in your
 environment (e.g. from an rprofile file), this can be left and that value will
 be used.  If a value for this is provided, it will take priority over your
-existing value.}
+existing value. Deprecated; use \code{cxn} instead.}
 
 \item{fn.oracle.password}{default is \code{'_none_'} This is your password for
 accessing oracle objects. If you have a value for this stored in your
 environment (e.g. from an rprofile file), this can be left and that value will
 be used.  If a value for this is provided, it will take priority over your
-existing value.}
+existing value. Deprecated; use \code{cxn} instead.}
 
 \item{fn.oracle.dsn}{default is \code{'_none_'} This is your dsn/ODBC
 identifier for accessing oracle objects. If you have a value for this stored
 in your environment (e.g. from an rprofile file), this can be left and that
 value will be used.  If a value for this is provided, it will take priority
-over your existing value.}
+over your existing value. Deprecated; use \code{cxn} instead.}
+
+\item{usepkg}{The default value is \code{'rodbc'}, but \code{'roracle'} 
+works as well. This describes the R package you use to connect to Oracle.  
+Deprecated; use \code{cxn} instead.}
 }
 \description{
 stratisfy is a program capable of Stratified Analyses of both DFO 

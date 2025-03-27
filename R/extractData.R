@@ -8,12 +8,16 @@
 # @param missions  The default value is \code{NULL}.
 # @param strata  The default value is \code{NULL}.
 # @param bySex  The default value is \code{NULL}.
-# @family Gale-force
+# @param cxn A valid Oracle connection object. This parameter allows you to 
+# pass an existing connection, reducing the need to establish a new connection 
+# within the function. If provided, it takes precedence over the connection-
+# related parameters.
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 #' @keywords internal
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, areas= NULL, bySex = NULL, 
-                      oracle_cxn = NULL, useBins=T){
+                      cxn = NULL, useBins=T){
+  thecmd <- Mar.utils:::connectionCheck(cxn)
   areaTweak = ""
   
   getCatch<-function(agency, dfSpp, missions, strata, areas){
@@ -52,7 +56,7 @@ extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                 I.cruise6, to_number(I.station)
                 ORDER BY I.cruise6, to_number(I.station)", sep="")
     }
-    raw.gscat<-oracle_cxn$thecmd(oracle_cxn$channel, sql)
+    raw.gscat<-thecmd(cxn, sql)
     if (nrow(raw.gscat)<1) stop("Error: No catch data can be found for your selection")
     return(raw.gscat)
   }
@@ -100,7 +104,7 @@ i.dmin,i.dmax,i.depth, i.dur,i.dist
               to_number(i.SHG) <= ",type,"
               ORDER BY i.CRUISE6,to_number(i.station)", sep="")
     }
-  raw.gsinf<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
+  raw.gsinf<-thecmd(cxn,  sql )
   #if (agency=="NMFS") raw.gsinf$STRAT<-sprintf("%05d", raw.gsinf$STRAT)
   
   raw.gsinf$SLAT = (as.numeric(substr(raw.gsinf$SLAT,1,2))+(raw.gsinf$SLAT - as.numeric(substr(raw.gsinf$SLAT,1,2))*100)/60)
@@ -147,7 +151,7 @@ getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
        d.SPEC=",spp," 
        ORDER BY d.mission,d.setno", sep="")
     
-    raw.gsdet<-oracle_cxn$thecmd(oracle_cxn$channel, sql )
+    raw.gsdet<-thecmd(cxn,  sql )
     #since berried and normal females get combined, add the CLEN for sets
     # raw.gsdet = 
     #   stats::aggregate(list(CLEN = raw.gsdet$CLEN),
@@ -181,7 +185,7 @@ getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
         STRATUM IN (",Mar.utils::SQL_in(strata),") 
         group by cruise6,station,age,length
         ORDER BY cruise6, to_number(station)", sep="")
-    raw.gsdet1<-oracle_cxn$thecmd(oracle_cxn$channel, sql1 )
+    raw.gsdet1<-thecmd(cxn,  sql1 )
     
     sql2<- paste("select cruise6 mission, catchsex fsex, to_number(station) setno,length, 
         sum(expnumlen) clen, 1 size_class
@@ -192,7 +196,7 @@ getDet<-function(agency, missions, strata, dfSpp, bySex, type, areas, useBins){
         group by cruise6,station,length, catchsex
         ORDER BY cruise6, to_number(station)",sep="")
     
-    raw.gsdet2<-oracle_cxn$thecmd(oracle_cxn$channel, sql2 )
+    raw.gsdet2<-thecmd(cxn,  sql2 )
     raw.gsdet<-merge(raw.gsdet1,raw.gsdet2, all.x=T) 
     raw.gsdet$FLEN[is.na(raw.gsdet$FLEN)] <- raw.gsdet$LENGTH[is.na(raw.gsdet$FLEN)]
   }
