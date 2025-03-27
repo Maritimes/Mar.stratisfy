@@ -160,18 +160,17 @@ stratisfy <- function(cxn,
   if (is.null(output)) output <- NA
   
   # Check for deprecated parameters
-  Mar.utils:::deprecationCheck(fn.oracle.username = fn.oracle.username, 
+  Mar.utils::deprecationCheck(fn.oracle.username = fn.oracle.username, 
                               fn.oracle.password = fn.oracle.password, 
                               fn.oracle.dsn = fn.oracle.dsn,
                               usepkg = usepkg)
   
   # Verify connection type
-  thecmd <- Mar.utils:::connectionCheck(cxn)
   if (is.null(cxn)) {
     cxn <- oracle_cxn$channel
     thecmd <- oracle_cxn$thecmd
   } else {
-    thecmd <- Mar.utils:::connectionCheck(cxn)
+    thecmd <- Mar.utils::connectionCheck(cxn)
   }  
     agency <- getUserInput("agency", agency = agency)
     type <- getUserInput("type", agency = agency, type = type, cxn = cxn)

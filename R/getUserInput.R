@@ -49,7 +49,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
                         bySex = NULL, strata = NULL, areas = NULL, 
                         dfMissionsStrata = NULL, ageBySex = NULL, confirmMissions = TRUE,
                         missions = NULL, cxn = NULL){
-  thecmd <- Mar.utils:::connectionCheck(cxn)
+  thecmd <- Mar.utils::connectionCheck(cxn)
   
   getAgency<-function(agency){
     if (!is.null(agency)){

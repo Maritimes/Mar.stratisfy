@@ -10,7 +10,7 @@
 # @family Gale-force
 # @author  Mike McMahon, \email{Mike.McMahon@@dfo-mpo.gc.ca}
 getAlkTable<-function(alkTable=NULL, cxn = NULL){
-  thecmd <- Mar.utils:::connectionCheck(cxn)
+  thecmd <- Mar.utils::connectionCheck(cxn)
   custAlkTable<-NA
   
   fn<-basename(alkTable)

@@ -17,7 +17,7 @@
 extractData<-function(requested = NULL, agency = NULL, dfSpp = NULL, type=NULL,
                       missions = NULL, strata = NULL, areas= NULL, bySex = NULL, 
                       cxn = NULL, useBins=T){
-  thecmd <- Mar.utils:::connectionCheck(cxn)
+  thecmd <- Mar.utils::connectionCheck(cxn)
   areaTweak = ""
   
   getCatch<-function(agency, dfSpp, missions, strata, areas){
