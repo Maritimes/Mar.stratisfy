@@ -162,8 +162,7 @@ stratisfy <- function(cxn,
   # Check for deprecated parameters
   Mar.utils::deprecationCheck(fn.oracle.username = fn.oracle.username, 
                               fn.oracle.password = fn.oracle.password, 
-                              fn.oracle.dsn = fn.oracle.dsn,
-                              usepkg = usepkg)
+                              fn.oracle.dsn = fn.oracle.dsn)
   
   # Verify connection type
   if (is.null(cxn)) {
@@ -172,7 +171,9 @@ stratisfy <- function(cxn,
   } else {
     thecmd <- Mar.utils::connectionCheck(cxn)
   }  
-    agency <- getUserInput("agency", agency = agency)
+
+    agency <- getUserInput("agency", agency = agency, cxn=cxn)
+
     type <- getUserInput("type", agency = agency, type = type, cxn = cxn)
     missionsAndStrata <- getUserInput("missionsAndStrata", agency = agency, type = type, 
                                       year = year, season = season, missions = missions, confirmMissions = confirmMissions,
@@ -184,8 +185,8 @@ stratisfy <- function(cxn,
     strataTable <- getUserInput("strataTable", strataTable = strataTable, 
                                 dfMissionsStrata = dfMissionsStrata, 
                                 cxn = cxn)
-    wingspread <- getUserInput("wingspread", agency = agency, wingspread = wingspread)
-    towDist <- getUserInput("towDist", towDist = towDist)
+    wingspread <- getUserInput("wingspread", agency = agency, wingspread = wingspread, cxn = cxn)
+    towDist <- getUserInput("towDist", towDist = towDist, cxn = cxn)
     dfStrata <- getUserInput("strata", agency = agency, strataTable = strataTable, 
                              strata = strata, dfMissionsStrata = dfMissionsStrata, 
                              towDist = towDist, wingspread = wingspread, 

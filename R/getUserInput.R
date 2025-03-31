@@ -49,6 +49,7 @@ getUserInput <-function(requested = NULL, agency = NULL, type = NULL,
                         bySex = NULL, strata = NULL, areas = NULL, 
                         dfMissionsStrata = NULL, ageBySex = NULL, confirmMissions = TRUE,
                         missions = NULL, cxn = NULL){
+
   thecmd <- Mar.utils::connectionCheck(cxn)
   
   getAgency<-function(agency){
@@ -111,6 +112,7 @@ Please enter the survey type:"))
   }
   
   getMissionsAndStrata<-function(agency, type, year, season, missions, cxn){
+    thecmd <- Mar.utils::connectionCheck(cxn)
     if (is.null(missions)){
     availSeasons = switch(agency,
                           "DFO" = c("SPRING","SUMMER", "FALL"),
@@ -196,7 +198,7 @@ Please enter the survey type:"))
 
     
     cat("\n Checking years matching your criteria...\n")
-    availYears = thecmd(cxn, , year.query)
+    availYears = thecmd(cxn, year.query)
     availYears = as.character(availYears[order(availYears$YEAR),1])
     
     yearpick <-NA
@@ -299,7 +301,7 @@ Please make a selection from the available options, or check your parameters\n**
     } else if (agency == "NMFS"){
       sql1 = paste0("SELECT DISTINCT STRATUM STRAT FROM USNEFSC.USS_STATION WHERE SHG <= ",type," AND CRUISE6 IN (",Mar.utils::SQL_in(missionPick),") AND STRATUM IS NOT NULL ORDER BY STRATUM")
     }
-    availStrata = thecmd(cxn, ,  sql1)
+    availStrata = thecmd(cxn,  sql1)
     # #2) AREAS
     # f (agency == "DFO"){
     #   sql2 = paste0("SELECT DISTINCT AREA FROM GROUNDFISH.GSINF WHERE MISSION IN (",Mar.utils::SQL_in(missionPick),") ORDER BY AREA")
@@ -312,7 +314,7 @@ Please make a selection from the available options, or check your parameters\n**
     return(res)
   }
   
-  getWingspread<-function(agency, wingspread){
+  getWingspread<-function(agency, wingspread, cxn){
     availWingspread<-switch(agency,
                             "DFO" = c("41","34"),
                             "NMFS"=c("34","36","41"))
@@ -355,6 +357,7 @@ Please make a selection from the available options, or check your parameters\n**
   }
   
   getStrataTable<-function(strataTable, dfMissionsStrata,cxn){
+    thecmd <- Mar.utils::connectionCheck(cxn)
     quickStrataTables<- c("GROUNDFISH.GSSTRATUM","USNEFSC.DFO5ZJM",
                           "USNEFSC.DFO5ZGHNO","USNEFSC.NMFS5ZJM",
                           "USNEFSC.NMFS5ZGHNO","USNEFSC.NMFS5ZJMC",
@@ -390,7 +393,7 @@ Please make a selection from the available options, or check your parameters\n**
                         SELECT 'USNEFSC.NMFS5ZU' SRC, COUNT(*) cnt FROM USNEFSC.NMFS5ZU WHERE STRAT IN (",stratList_n,")
                         )
                         WHERE cnt >0 ORDER BY CNT DESC") 
-    availStrataTables<-thecmd(cxn, , strataTableSql)
+    availStrataTables<-thecmd(cxn, strataTableSql)
 
     if (NROW(availStrataTables)==0){
       stop("\n\n!!!ABORTING!!!\nNo Strata Tables meet your criteria")
@@ -485,6 +488,7 @@ combining sexes in age results\n")
     sexSel = getSexSelections(bySexChoice, ageBySexChoice)
     bySexChoice = sexSel[1]
     ageBySexChoice = sexSel[2]
+    thecmd <- Mar.utils::connectionCheck(cxn)
     if (agency =="DFO"){
       if (bySexChoice){
         species.query.tweak<-"AND LFSEXED = 'Y' "
@@ -517,7 +521,7 @@ combining sexes in age results\n")
     
     
     
-    availSpp = thecmd(cxn, , species.query)
+    availSpp = thecmd(cxn, species.query)
     if (!is.null(spp)){
       if (spp %in% availSpp$SPEC){
         sppChoice <- spp
@@ -558,7 +562,7 @@ sex option.  Please select one from the list.\n")
       print("\nWeird strata encountered please report your selections to Mike.McMahon@dfo-mpo.gc.ca")
     }
     sql = paste0("SELECT * FROM ",strataTable, " WHERE 1=1 ", strata.tweak, " ORDER BY STRAT")
-    availStrat<-thecmd(cxn, , sql)
+    availStrat<-thecmd(cxn, sql)
     while(all(!strataPick %in% availStrat$STRAT)){
       strataPick <- utils::select.list(as.character(availStrat$STRAT),
                                        multiple=T, graphics=T, preselect = strata.preselect,
@@ -576,7 +580,7 @@ sex option.  Please select one from the list.\n")
           WHERE 
           strat IN (",Mar.utils::SQL_in(dfStrata[,1]),")
            ORDER BY strat", sep="")
-    dfStrata.det<-thecmd(cxn, , sql2)
+    dfStrata.det<-thecmd(cxn, sql2)
     if (addZ) dfStrata.det[,"STRAT"]<-paste0(0,dfStrata.det[,"STRAT"])
     dfStrata.det= merge(dfStrata, dfStrata.det)
     dfStrata.det<-dfStrata.det[order(dfStrata.det$STRAT),] 
@@ -605,7 +609,7 @@ sex option.  Please select one from the list.\n")
       ORDER BY AREA"
       )
     }
-    availAreas<-thecmd(cxn, , sql)
+    availAreas<-thecmd(cxn, sql)
     if (is.null(areas) & nrow(availAreas)>0){
       while(all(!areasPick %in% availAreas$AREA)){
         areasPick <- utils::select.list(as.character(availAreas$AREA),
