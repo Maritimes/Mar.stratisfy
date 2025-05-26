@@ -261,7 +261,7 @@ Please enter the survey type:"))
                              ORDER BY S.CRUISE6")
     }
     cat("\n Looking for Missions meeting your criteria...\n")
-    availMissions = thecmd(cxn, , mission.query)
+    availMissions = thecmd(cxn, mission.query)
     if (NROW(availMissions)==0) stop("\n\n!!!ABORTING!!!\nNo Missions can be found where the requested Experiment Type and Season can be found")
     missionPick <-NA
     if (!is.null(missions)) {
