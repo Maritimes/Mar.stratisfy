@@ -44,9 +44,6 @@
 #' pass an existing connection, reducing the need to establish a new connection 
 #' within the function. If provided, it takes precedence over the connection-
 #' related parameters.
-#' @param usepkg  The default value is \code{'rodbc'}, but \code{'roracle'} 
-#' works as well. This describes the R package you use to connect to Oracle.  
-#' Deprecated; use \code{cxn} instead.
 #' @param agency  The default value is \code{'DFO'}, the other option is 
 #' \code{'NMFS'}.  Setting to \code{NULL} will result in a pick list.
 #' @param type This is the 'experiment type', and the default value is \code{1}.  
@@ -156,7 +153,6 @@ stratisfy <- function(cxn,
                       fn.oracle.username ="_none_",
                       fn.oracle.password="_none_",
                       fn.oracle.dsn="_none_") {
-  
   if (is.null(output)) output <- NA
   
   # Check for deprecated parameters
